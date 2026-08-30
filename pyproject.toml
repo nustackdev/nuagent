@@ -1,0 +1,248 @@
+# ============================================================================
+# Build System
+# ============================================================================
+[build-system]
+requires = ["setuptools>=68.0"]
+build-backend = "setuptools.build_meta"
+
+# ============================================================================
+# Project Metadata (PEP 621)
+# ============================================================================
+[project]
+name = "nuagent"
+version = "0.1.0"
+description = "Toolkit for building agents on Nu."
+readme = "README.md"
+license = "Apache-2.0"
+authors = [
+    {name = "Gor Arakelyan", email = "gorarkln@gmail.com"}
+]
+maintainers = [
+    {name = "Gor Arakelyan", email = "gorarkln@gmail.com"}
+]
+keywords = [
+    "nustack",
+    "nu",
+    "python",
+    "agents",
+    "ai-agents",
+    "agentic",
+    "llm",
+    "tool-use",
+    "code-execution",
+]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+]
+requires-python = ">=3.10"
+dependencies = [
+    "nustack-py>=0.1.18",
+]
+
+[project.urls]
+Homepage = "https://github.com/nustackdev/nuagent"
+Documentation = "https://github.com/nustackdev/nuagent#readme"
+Repository = "https://github.com/nustackdev/nuagent"
+Issues = "https://github.com/nustackdev/nuagent/issues"
+Changelog = "https://github.com/nustackdev/nuagent/releases"
+
+[project.optional-dependencies]
+# Development tools
+dev = [
+    "ruff>=0.1.0",
+    "pre-commit>=3.0.0",
+]
+# Testing
+test = [
+    "pytest>=7.0.0",
+    "pytest-cov>=4.0.0",
+    "pytest-xdist>=3.0.0",
+    "pytest-timeout>=2.1.0",
+    "pytest-benchmark>=4.0.0",
+    "pytest-asyncio>=1.2.0",
+    "hypothesis>=6.0.0",
+]
+# All development dependencies
+all = [
+    "nuagent[dev,test]",
+]
+
+# ============================================================================
+# Package Discovery
+# ============================================================================
+[tool.setuptools.packages.find]
+where = ["src"]
+include = ["nuagent*"]
+namespaces = false
+
+# ============================================================================
+# Testing - pytest
+# ============================================================================
+[tool.pytest.ini_options]
+minversion = "7.0"
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+addopts = [
+    "--strict-markers",
+    "--strict-config",
+    "--tb=short",
+    "--durations=10",
+]
+markers = [
+    "unit: Unit tests - fast, isolated",
+    "functional: Functional end-to-end tests",
+    "integration: Integration tests",
+    "performance: Performance benchmarks",
+    "slow: Slow tests (deselect with '-m \"not slow\"')",
+]
+filterwarnings = [
+    "error",
+    "ignore::UserWarning",
+    "ignore::DeprecationWarning",
+]
+
+# ============================================================================
+# Coverage
+# ============================================================================
+[tool.coverage.run]
+source = ["src/nuagent"]
+omit = [
+    "*/tests/*",
+    "*/test_*",
+    "*/__pycache__/*",
+]
+branch = true
+
+[tool.coverage.report]
+exclude_lines = [
+    "pragma: no cover",
+    "def __repr__",
+    "def __str__",
+    "raise AssertionError",
+    "raise NotImplementedError",
+    "if __name__ == .__main__.:",
+    "if TYPE_CHECKING:",
+    "if typing.TYPE_CHECKING:",
+    "@abstractmethod",
+    "@abc.abstractmethod",
+]
+precision = 2
+show_missing = true
+
+[tool.coverage.html]
+directory = "tests/reports/coverage"
+
+# ============================================================================
+# Linting & Formatting - Ruff
+# ============================================================================
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+src = ["src", "tests"]
+extend-exclude = [
+    ".venv",
+    "build",
+    "dist",
+    "*.egg-info",
+]
+
+[tool.ruff.lint]
+select = [
+    "E",      # pycodestyle errors
+    "W",      # pycodestyle warnings
+    "F",      # pyflakes
+    "I",      # isort
+    "B",      # flake8-bugbear
+    "C4",     # flake8-comprehensions
+    "UP",     # pyupgrade
+    "N",      # pep8-naming
+    "YTT",    # flake8-2020
+    "S",      # flake8-bandit (security)
+    "T20",    # flake8-print
+    "D",      # pydocstyle
+    "ANN",    # flake8-annotations
+    "TC",     # flake8-type-checking
+    "RUF",    # ruff-specific rules
+    "PTH",    # flake8-pathlib
+]
+ignore = [
+    "E501",   # Line too long (handled by formatter)
+    "D105",   # Missing docstring in magic method
+]
+
+[tool.ruff.lint.pydocstyle]
+convention = "google"  # Use Google style format
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**/*.py" = [
+    "S101",   # assert allowed in tests
+    "T20",    # print allowed in tests
+    "D",      # docstrings not required in tests
+    "E711",
+    "E712",
+    "ANN",    # type annotations not required in tests
+    "N806",   # disable variable name checks
+]
+"src/**/testing/**/*.py" = [
+    "S101",   # assert allowed in tests
+    "T20",    # print allowed in tests
+    "D",      # docstrings not required in tests
+    "E711",
+    "E712",
+    "ANN",    # type annotations not required in tests
+    "N806",   # disable variable name checks
+    "B017",   # FIXME: blind exception pass; fix, remove this later
+]
+"examples/**/*.py" = [
+    "S101",   # assert allowed in examples
+    "T20",    # print allowed in examples
+    "D",      # docstrings not required in examples
+    "ANN",    # type annotations not required in examples
+]
+"setup.py" = [
+    "T20",    # print allowed in setup
+    "D",      # docstrings not required in setup
+]
+
+[tool.ruff.lint.isort]
+known-first-party = ["nuagent"]
+force-single-line = false
+lines-after-imports = 2
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+skip-magic-trailing-comma = false
+line-ending = "auto"
+docstring-code-format = true         # Format code blocks in docstrings
+docstring-code-line-length = 80      # Shorter lines in docstring examples
+
+# ============================================================================
+# Type Checking - mypy
+# ============================================================================
+[tool.mypy]
+python_version = "3.10"
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = false
+ignore_missing_imports = true
+exclude = [
+    "build/",
+    "dist/",
+    ".venv/",
+]
+
+# ============================================================================
+# Security
+# ============================================================================
+[tool.bandit]
+exclude_dirs = ["tests/", "examples/", "docs/"]

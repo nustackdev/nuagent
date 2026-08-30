@@ -1,0 +1,53 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+# Distribution
+build/
+dist/
+*.egg-info/
+*.egg
+MANIFEST
+
+# Virtual environments
+.venv/
+
+# Testing
+.pytest_cache/
+.coverage
+.coverage.*
+htmlcov/
+tests/reports/
+.hypothesis/
+
+# Profiling
+*.prof
+*.lprof
+
+# Benchmarking
+*.benchmark
+*.benchmarks
+
+# Tools
+.ruff_cache/
+.mypy_cache/
+
+# Local data
+.db*/
+.logs*/
+*.db/
+
+# OS
+.DS_Store
+
+# Misc
+_playground/
+.agent.md
+Claude.md
+repomix*
+uv.lock
+
+.idea/
+.vscode/

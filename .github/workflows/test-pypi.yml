@@ -1,0 +1,46 @@
+name: Test PyPI Package
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version to test (e.g., 0.1.1). Leave empty for latest.'
+        required: false
+        default: ''
+
+jobs:
+  smoke_test:
+    name: Smoke test on ${{ matrix.os }} (Python ${{ matrix.python-version }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+        python-version: ['3.10', '3.11', '3.12', '3.13', '3.14']
+
+    steps:
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v6
+        with:
+          python-version: ${{ matrix.python-version }}
+          allow-prereleases: true
+
+      - name: Install nuagent from PyPI
+        run: |
+          python -m pip install --upgrade pip
+          if [ -z "${{ inputs.version }}" ]; then
+            pip install nuagent
+          else
+            pip install nuagent==${{ inputs.version }}
+          fi
+
+      - name: Show installed version
+        run: pip show nuagent
+
+      - name: Smoke test - imports
+        run: |
+          python << 'EOF'
+          import nuagent
+          print(f"  nuagent ok: {nuagent}")
+          print("All smoke tests passed!")
+          EOF
