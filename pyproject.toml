@@ -43,7 +43,7 @@ classifiers = [
 ]
 requires-python = ">=3.10"
 dependencies = [
-    "nustack-py>=0.1.18",
+    "nustack-py[all]>=0.1.18",
 ]
 
 [project.urls]
