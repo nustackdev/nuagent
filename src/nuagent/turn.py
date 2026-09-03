@@ -117,21 +117,33 @@ def Turn(  # noqa: N802 -- a term constructor, named like the Flows it composes
 
     banner = nu.Str("\n=== model ===\n") if label is None else nu.Str("\n=== ") + label + " ===\n"
 
-    steps: list[Nu] = [reply.set(text)]
+    steps: list[Nu] = []
+    if echo:
+        asking = (
+            nu.Str("\n>>> asking model... <<<")
+            if label is None
+            else nu.Str("\n>>> ") + label + nu.Str(" | asking model... <<<")
+        )
+        steps.append(nu.print(asking))
+    steps.append(reply.set(text))
     if echo:
         steps.append(nu.print(banner + reply))
     steps += [
         messages.append(nu.Dict.of(role="assistant", content=reply)),
         draft.set(source),
-        outcome.set(nu.Str(result)),
     ]
+    if echo:
+        steps.append(nu.print(nu.Str("--- extracted source ---\n") + draft))
+    steps.append(outcome.set(nu.Str(result)))
+    if echo:
+        steps.append(nu.print(nu.Str("--- outcome ---\n") + outcome))
     if goal is None:
         steps.append(observation.set(observe(outcome, state)))
     else:
         verdict = nu.If(goal, nu.Str(met), nu.Str(unmet))
         steps.append(observation.set(observe(outcome, state, verdict=verdict)))
     if echo:
-        steps.append(nu.print(nu.Str("--- observed ---\n") + observation))
+        steps.append(nu.print(nu.Str("--- observation ---\n") + observation))
     steps.append(messages.append(nu.Dict.of(role="user", content=observation)))
     if after is not None:
         steps.append(after)

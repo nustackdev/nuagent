@@ -20,6 +20,7 @@ from typing import TYPE_CHECKING
 
 import nu.core
 import nu.flows
+import nu.forms.collections
 import nu.forms.primitives
 import nu.spans
 from nu.info import catalogue_forms, catalogue_interactions, catalogue_refs
@@ -37,6 +38,7 @@ DEFAULT_MODULES: tuple[ModuleType, ...] = (
     nu.flows,
     nu.spans,
     nu.forms.primitives,
+    nu.forms.collections,
 )
 
 

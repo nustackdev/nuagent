@@ -1,9 +1,11 @@
-"""Smoke test the agent loop against OpenRouter's free Nemotron.
+"""Smoke test the agent loop against Ollama on red.
 
 Run::
 
-    export OPENROUTER_API_KEY=sk-or-...
-    .venv/bin/python examples/openrouter_smoke.py
+    .venv/bin/python examples/ollama_smoke.py
+
+Override the model with ``OLLAMA_MODEL=qwen2.5:32b-instruct-q4_K_M`` or the
+host with ``OLLAMA_HOST=localhost``.
 
 The agent has no bound Shape from the caller's world; the task is a pure
 query. It writes a Nu term that returns a value, we read the yield from the
@@ -15,7 +17,6 @@ composition, so a run that succeeds proves the pipe is clean.
 from __future__ import annotations
 
 import os
-import sys
 
 import nu
 from nu.lang.sentinels import UNSET
@@ -23,11 +24,12 @@ from nu.lang.sentinels import UNSET
 import nuagent
 
 
-MODEL = os.environ.get("OPENROUTER_MODEL", "nvidia/nemotron-3.5-lightning:free")
+MODEL = os.environ.get("OLLAMA_MODEL", "qwen2.5-coder:32b-instruct-q4_K_M")
+HOST = os.environ.get("OLLAMA_HOST", "red")
 
 
 class Bot(nu.Service):
-    """Chat surface bound to OpenRouter for this run."""
+    """Chat surface bound to Ollama for this run."""
 
     chat = nu.llm.ChatRef.method(temperature=0.0)
 
@@ -51,13 +53,18 @@ TASKS = [
 ]
 
 
-def run_task(api_key: str, task: str) -> None:
+def run_task(task: str) -> None:
     system = nuagent.system_prompt(task)
     seed = Ephemeral.messages.set(
         nu.List.of(nu.Dict.of(role="system", content=nu.Str(system))),
     )
 
-    goal = Ephemeral.outcome.not_empty()
+    # Success: the outcome slot holds a value AND it isn't a failure prefix.
+    outcome = Ephemeral.outcome
+    failed_run = outcome.startswith("RUNTIME FAILED").or_(
+        outcome.startswith("CONSTRUCTION FAILED"),
+    )
+    goal = outcome.not_empty().and_(failed_run.not_())
 
     agent = nuagent.Agent(
         chat=Bot.chat,
@@ -82,19 +89,15 @@ def run_task(api_key: str, task: str) -> None:
     nu.run(
         nu.With(
             nu.Provide(dict, {}, tag=Ephemeral),
-            nu.llm.openrouter(Bot, api_key=api_key, model=MODEL),
+            nu.llm.ollama(Bot, host=HOST, model=MODEL),
             body=agent,
         )
     )
 
 
 def main() -> int:
-    api_key = os.environ.get("OPENROUTER_API_KEY")
-    if not api_key:
-        print("OPENROUTER_API_KEY not set", file=sys.stderr)
-        return 2
     for task in TASKS:
-        run_task(api_key, task)
+        run_task(task)
     return 0
 
 
