@@ -9,15 +9,18 @@ Yield and state are not symmetric
 
 Most programs a model writes are Command chains, and a Command yields
 nothing. So the yield is often ``None`` and the state is the only evidence
-anything happened at all. That asymmetry decides the truncation policy: the
-yield is truncated, the state never is.
+anything happened at all.
 
-Truncating state is what makes a loop diverge. A model that is shown half of
-a list it just wrote cannot tell a successful append from a failed one, so it
-writes the append again, and the observation gets longer, and it truncates
-harder. Whatever the caller passes as ``state`` is therefore its own problem
-to keep small -- a count, a slice, a few slots -- and this module reproduces
-it whole.
+Nothing is truncated by default. Truncating state is what makes a loop
+diverge: a model shown half of a list it just wrote cannot tell a successful
+append from a failed one, so it writes the append again, and the observation
+gets longer, and it truncates harder. The yield has the same problem the
+moment it carries the answer -- a lookup turn, where the model reads a
+docstring out of ``nu.inspect.Inspect``, yields thousands of characters and
+is useless cut off near the top. So ``limit`` is a knob a caller reaches for
+when it knows its yields are unbounded, not a default. Whatever the caller
+passes as ``state`` is its own problem to keep small: a count, a slice, a few
+slots.
 
 Being wrong is also an outcome
 ------------------------------
@@ -52,12 +55,7 @@ if TYPE_CHECKING:
     from nu.lang import Nu, StrArg
 
 
-__all__ = ["DEFAULT_LIMIT", "attempted", "crashed", "failed", "observation", "rendered"]
-
-
-DEFAULT_LIMIT = 400
-"""Characters of yield kept. Long enough for a real value, short enough that
-a runaway repr cannot push the state out of the model's attention."""
+__all__ = ["attempted", "crashed", "failed", "observation", "rendered"]
 
 
 def rendered(term: Nu | object) -> Nu:
@@ -106,7 +104,7 @@ def observation(
     state: Nu | object | None = None,
     *,
     verdict: Nu | object | None = None,
-    limit: int = DEFAULT_LIMIT,
+    limit: int | None = None,
     outcome_label: str = "outcome",
     state_label: str = "state",
     verdict_label: str = "goal",
@@ -124,7 +122,10 @@ def observation(
             constructs and runs but does not satisfy the goal produces an
             observation indistinguishable from success, and the model has
             nothing to correct against.
-        limit: characters of ``outcome`` kept. State and verdict are never cut.
+        limit: characters of ``outcome`` kept. ``None`` (the default) keeps
+            all of it, because a truncated yield is how a lookup turn or a
+            long answer gets thrown away. Pass an int only for a caller whose
+            yields are unbounded. State and verdict are never cut.
         outcome_label: prefix for the yield line.
         state_label: prefix for the state line.
         verdict_label: prefix for the verdict line.
@@ -132,7 +133,8 @@ def observation(
     Returns:
         A ``Str`` term yielding the observation text.
     """
-    text = nu.Str(f"{outcome_label}: ") + nu.Str(outcome)[:limit]
+    body = nu.Str(outcome) if limit is None else nu.Str(outcome)[:limit]
+    text = nu.Str(f"{outcome_label}: ") + body
     if state is not None:
         text = text + f"\n{state_label}: " + rendered(state)
     if verdict is not None:
