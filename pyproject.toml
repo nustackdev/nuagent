@@ -43,7 +43,10 @@ classifiers = [
 ]
 requires-python = ">=3.10"
 dependencies = [
-    "nustack-py[all]>=0.1.18",
+    # nucore comes in transitively; the extras are one per fabric nuagent
+    # touches: llm (httpx) for the chat backend, cc (claude-agent-sdk) for the
+    # Claude Code backend, mem for the working-memory refs.
+    "nustd[llm,cc,mem]>=0.2.0",
 ]
 
 [project.urls]
@@ -81,6 +84,11 @@ all = [
 where = ["src"]
 include = ["nuagent*"]
 namespaces = false
+
+# The prompt's prose sections are shipped, not generated. Without this the
+# wheel installs a prompt package that raises on every build.
+[tool.setuptools.package-data]
+"nuagent.prompt" = ["text/*.md"]
 
 # ============================================================================
 # Testing - pytest

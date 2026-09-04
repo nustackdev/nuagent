@@ -102,16 +102,7 @@ EXPECTED = "385"
 
 TASKS = [
     (
-        "Compute the sum of squares of the integers 1 through 10 as an Int "
-        f"term. The correct answer is {EXPECTED}; your `out()` must yield a "
-        "term whose rendered value equals that exactly.\n\n"
-        "How to work: this is your first time seeing Nu. Do not guess. "
-        "Turn 1 and 2 should be exploration only: pick the handful of atoms "
-        "you think you'll need from the catalogue and run "
-        "`nu.info.Inspect(\"<path>\")` on each to learn the real "
-        "signatures and semantics. Only once you've read what you need, "
-        "start composing. If a compose attempt fails, inspect what confused "
-        "you before rewriting."
+        "Compute the sum of squares of the integers 1 through 10"
     ),
 ]
 
