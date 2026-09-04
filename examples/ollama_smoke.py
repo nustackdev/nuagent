@@ -47,9 +47,10 @@ class Ephemeral(nu.Shape):
 
 
 TASKS = [
-    "Return the sum of the first five positive integers as an Int term.",
-    "Return the product 6 * 7 as an Int term.",
-    "Return a List containing the ints 1, 2, 3 in order.",
+    "You have the whole core catalogue of NU. think about some interesting Nu expression and write it. on the first place state it then write code and iterate unless it reutrns expected output"
+    # "Return the sum of the first five positive integers as an Int term.",
+    # "Return the product 6 * 7 as an Int term.",
+    # "Return a List containing the ints 1, 2, 3 in order.",
 ]
 
 
