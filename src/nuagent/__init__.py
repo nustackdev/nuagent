@@ -1,11 +1,5 @@
 """nuagent: an agent as a Nu term.
 
-Not a fabric. ``kv``, ``mem``, ``http``, ``llm`` and ``cc`` each own a
-substrate -- a store, a connection, a process -- and exist to make it
-addressable. ``nuagent`` owns nothing external. Its substrate is whatever
-the caller bound, and it holds no Shape, no state, no registry of its own.
-The right analogue is :mod:`nu.core.flows`: composition over what already exists.
-
 The thesis
 ----------
 
@@ -25,10 +19,10 @@ The modules
   as package data, vocabulary generated from ``nu.inspect`` catalogues, and
   the caller's own Shapes and Services rendered as the app surface. Drop or
   replace a section per agent.
-- :mod:`~nuagent.agents` -- the turn machinery: the fenced block out of a
-  reply, the yield and the state as the next message, one turn usable alone
-  as a single-shot agent, and the composed agents. One so far: ``Agent`` (a
-  Turn under a WhileDo).
+- :mod:`~nuagent.agent` -- the session Shape (the same slots on ``nu.mem`` or
+  ``nu.kv``, which is all that separates an ephemeral run from a durable one),
+  the fenced block out of a reply, one attempt at the program, ``Turn`` usable
+  alone as a single-shot agent, and ``Agent``: a Turn under a WhileDo.
 
 Prefer ``nu.arun``: an LLM call is network-bound and blocks the loop under
 sync.
@@ -36,18 +30,18 @@ sync.
 
 from __future__ import annotations
 
-from .agents import (
+from .agent import (
+    FAILED_LABEL,
+    FENCE,
     NO_CODE,
-    Agent,
-    Turn,
+    NO_CODE_LABEL,
+    KVSession,
+    MemSession,
+    agent,
     attempted,
-    crashed,
     failed,
     fenced,
-    fenceless,
-    never_ran,
-    observation,
-    rendered,
+    turn,
 )
 from .prompt import DEFAULT_MODULES, DEFAULT_SECTIONS, inserted, surface_section, system_prompt
 
@@ -57,19 +51,19 @@ __version__ = "0.1.0"
 __all__ = [
     "DEFAULT_MODULES",
     "DEFAULT_SECTIONS",
+    "FAILED_LABEL",
+    "FENCE",
     "NO_CODE",
-    "Agent",
-    "Turn",
+    "NO_CODE_LABEL",
+    "KVSession",
+    "MemSession",
     "__version__",
+    "agent",
     "attempted",
-    "crashed",
     "failed",
     "fenced",
-    "fenceless",
     "inserted",
-    "never_ran",
-    "observation",
-    "rendered",
     "surface_section",
     "system_prompt",
+    "turn",
 ]

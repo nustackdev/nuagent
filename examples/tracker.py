@@ -25,7 +25,7 @@ non-empty summary and ``open_count`` matches the number of undone tasks. The
 loop stops the turn that becomes true.
 
 Two dict fabrics, and the split matters. The agent's own working memory is
-bound tagged to ``Ephemeral``, so nothing the model writes can reach it. The
+bound tagged to ``MemSession``, so nothing the model writes can reach it. The
 board is bound untagged on the Context, for two reasons: nu.mem addresses by
 slot name and the model's module declares its own ``Board`` class, where a
 tagged binding is keyed on the host's class object and would not resolve;
@@ -170,18 +170,6 @@ the verbs of a ShapesDictRef yet, so look them up before you write.\
 # --- the agent's own memory -----------------------------------------------
 
 
-class Ephemeral(nu.Shape):
-    """Working memory for one agent run. Bound tagged, out of the model's reach."""
-
-    messages = nu.mem.ListRef.slot(dict)
-    reply = nu.mem.StrRef.slot()
-    draft = nu.mem.ProgramRef.slot()
-    outcome = nu.mem.StrRef.slot()
-    observation = nu.mem.StrRef.slot()
-    turns = nu.mem.IntRef.slot()
-    done = nu.mem.BoolRef.slot()
-
-
 class Bot(nu.Service):
     """Claude Code prompt surface for one agent run."""
 
@@ -245,7 +233,7 @@ def prompt() -> str:
     because it is the half of the task that is not prose.
 
     The two app Shapes are named one by one rather than handing over this
-    module, which also declares ``Ephemeral`` and ``Bot``. Those are the
+    module, which also declares ``Bot``. That is the
     harness, not the agent's world, and a surface is exactly the set of Refs
     the caller chose to bind.
     """
@@ -293,31 +281,25 @@ def agent() -> Nu:
     """
     system = prompt()
     seed = (
-        Ephemeral.messages.set(
+        nuagent.MemSession.messages.set(
             nu.List.of(nu.Dict.of(role="system", content=nu.Str(system))),
         )
         >> seed_world()
     )
 
-    loop = nuagent.Agent(
+    loop = nuagent.agent(
+        session=nuagent.MemSession,
         chat=chat,
-        messages=Ephemeral.messages,
-        reply=Ephemeral.reply,
-        draft=Ephemeral.draft,
-        outcome=Ephemeral.outcome,
-        observation=Ephemeral.observation,
         state=state(),
         goal=goal(),
-        done=Ephemeral.done,
-        turns=Ephemeral.turns,
         max_turns=8,
         start=seed,
         brace=UNSET,
         echo=True,
-        report=nu.print(nu.Str("\n=== board ===\n") + nuagent.rendered(state())),
+        report=nu.print(nu.Str("\n=== board ===\n") + nu.ToStr(nu.Repr(state()))),
     )
     return nu.With(
-        nu.Provide(dict, {}, tag=Ephemeral),
+        nu.Provide(dict, {}, tag=nuagent.MemSession),
         nu.cc.bind(Bot, model=MODEL, allowed_tools=[], permission_mode="default"),
         body=loop,
     )
