@@ -9,6 +9,7 @@ import sys
 import zipfile
 from pathlib import Path
 
+import nu
 import pytest
 
 import nuagent
@@ -17,12 +18,15 @@ from nuagent.prompt import (
     DEFAULT_SECTIONS,
     PROSE,
     Section,
+    app_records,
     bytes_methods,
     catalogue_section,
     inserted,
     read_markdown,
     render_catalogue,
+    render_surface,
     replaced,
+    surface_section,
     system_prompt,
     without,
 )
@@ -264,3 +268,110 @@ def test_the_public_surface_is_importable():
     assert sys.modules["nuagent"] is nuagent
     for name in nuagent.__all__:
         assert hasattr(nuagent, name), name
+
+
+# --- app surface ----------------------------------------------------------
+
+
+class Widget(nu.Shape):
+    """One widget on the wall.
+
+    Notes:
+        - `label` is what the UI prints, never the id.
+    """
+
+    label = nu.mem.StrRef.slot()
+    weight = nu.mem.IntRef.slot()
+
+
+class Wall(nu.Shape):
+    """Every widget, by id."""
+
+    widgets = nu.mem.ShapesDictRef.slot(Widget, str)
+    total = nu.mem.IntRef.slot()
+
+
+class Clock(nu.Service):
+    """Wall clock, as a Service."""
+
+    now = nu.service.QueryRef.method()
+
+
+APP = (Wall, Widget, Clock)
+
+
+def test_the_surface_renders_the_callers_shapes():
+    text = render_surface(APP)
+    assert "# Your app surface" in text
+    for name in ("Wall", "Widget", "Clock"):
+        assert f".{name}" in text, name
+
+
+def test_every_entry_appears_with_its_type():
+    text = render_surface(APP)
+    for token in ("widgets", "ShapesDictRef", "total", "label", "weight", "now", "QueryRef"):
+        assert token in text, token
+
+
+def test_the_fabric_is_named_so_a_slot_can_be_redeclared():
+    text = render_surface((Wall,))
+    assert "(nu.mem)" in text
+    assert "(nu.service)" in render_surface((Clock,))
+
+
+def test_prose_and_notes_ride_along():
+    text = render_surface((Widget,))
+    assert "One widget on the wall." in text
+    assert "- `label` is what the UI prints, never the id." in text
+
+
+def test_no_method_table_leaks_in():
+    # The whole point of the entry-summary level: a StrRef page is 83 lines
+    # and six slots inlined is 400. If any of these show up, a Ref page got
+    # expanded into the prompt.
+    text = render_surface(APP)
+    for leaked in (".set(...)", ".is_empty(...)", "CollectionResultT", "methods (", "-> Bool"):
+        assert leaked not in text, leaked
+    assert len(text.splitlines()) < 60
+
+
+def test_a_module_contributes_every_shape_and_service_it_declares():
+    import sys
+
+    module = sys.modules[__name__]
+    text = render_surface((module,))
+    for name in ("Wall", "Widget", "Clock"):
+        assert f".{name}" in text, name
+
+
+def test_naming_a_class_twice_renders_it_once():
+    import sys
+
+    text = render_surface((sys.modules[__name__], Wall))
+    assert text.count("## shape  ") == len(app_records((Wall, Widget)))
+
+
+def test_anything_that_is_not_a_declared_class_raises():
+    with pytest.raises(TypeError):
+        app_records((42,))
+
+
+def test_an_empty_surface_says_so_rather_than_rendering_nothing():
+    assert "nothing is bound" in render_surface(())
+
+
+def test_the_surface_is_a_section_that_can_be_added_and_dropped():
+    sections = inserted(DEFAULT_SECTIONS, surface_section(APP))
+    assert [s.name for s in sections][-1] == "surface"
+    text = system_prompt(TASK, sections=sections)
+    assert "# Your app surface" in text
+    assert text.index("# Your app surface") > text.index("# Catalogue")
+    assert text.index("# Your app surface") < text.index("# Task")
+    back = without(sections, "surface")
+    assert [s.name for s in back] == [s.name for s in DEFAULT_SECTIONS]
+    assert "# Your app surface" not in system_prompt(TASK, sections=back)
+
+
+def test_the_surface_is_not_in_the_default_sections():
+    # No caller, no app. The default prompt teaches the language only.
+    assert "surface" not in [s.name for s in DEFAULT_SECTIONS]
