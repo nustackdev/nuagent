@@ -41,6 +41,19 @@ Construction failure is an outcome
 "message (line N)", and that is exactly what a model needs to fix its own
 code. It comes back through the same slot a successful yield does, so a
 failure is just another observation rather than a separate control path.
+
+Prose is not a construction failure
+-----------------------------------
+
+The extractor falls back to the whole reply when there is no complete fence,
+because a model answering with bare unfenced source is common. When the reply
+was really prose, that fallback hands English to the python parser and the
+Diagnostic describes a syntax error in a sentence: "invalid character '-'
+(U+2014) (line 2)". A model reading that tries to fix the sentence.
+
+So :func:`failed` takes the reply. No fence plus a construction failure means
+the reply carried no code, and the model is told that instead of being handed
+a line number into its own prose.
 """
 
 from __future__ import annotations
@@ -50,12 +63,40 @@ from typing import TYPE_CHECKING
 import nu
 from nu.lang.sentinels import UNSET
 
+from .extract import fenceless
+
 
 if TYPE_CHECKING:
     from nu.lang import Nu, StrArg
 
 
-__all__ = ["attempted", "crashed", "failed", "observation", "rendered"]
+__all__ = [
+    "FAILED_LABEL",
+    "NO_CODE",
+    "NO_CODE_LABEL",
+    "attempted",
+    "crashed",
+    "failed",
+    "never_ran",
+    "observation",
+    "rendered",
+]
+
+
+#: Prefix on a Diagnostic from a module that did not build.
+FAILED_LABEL = "CONSTRUCTION FAILED"
+
+#: Prefix on the diagnostic for a reply that carried no code at all.
+NO_CODE_LABEL = "NO CODE BLOCK"
+
+#: What a model is told when it answered with prose. It says what happened
+#: (nothing ran), why (no fence), and what to do instead, and it never
+#: mentions a line number, because there is no source to have a line 2.
+NO_CODE = (
+    f"{NO_CODE_LABEL}: your reply contained no fenced code block, so nothing ran. "
+    "Prose is not an action here. Reply with one fenced python block defining "
+    "out(); to claim the task is done, send a program that yields the evidence."
+)
 
 
 def rendered(term: Nu | object) -> Nu:
@@ -68,19 +109,56 @@ def rendered(term: Nu | object) -> Nu:
     return nu.ToStr(nu.Repr(term))
 
 
-def failed(*, attr: str = "error", label: str = "CONSTRUCTION FAILED") -> Nu:
+def failed(
+    *,
+    attr: str = "error",
+    label: str = FAILED_LABEL,
+    reply: Nu | None = None,
+    no_code: str = NO_CODE,
+) -> Nu:
     """The catch branch for ``run(on_error=...)``: the Diagnostic, as text.
 
     Args:
         attr: attrs key the caught error is bound under. ``TryCatch`` uses
             "error"; change it only if the caller re-tagged it.
         label: prefix the model is told to look for.
+        reply: Ref holding the raw model text. Passed, a construction failure
+            on a reply with no complete fence reports ``no_code`` instead of
+            a Diagnostic, because the parser was reading prose. Omitted, the
+            Diagnostic is reported either way.
+        no_code: what the model is told when its reply carried no code.
 
     Returns:
-        A ``Str`` term yielding "LABEL: message (line N)".
+        A ``Str`` term yielding "LABEL: message (line N)", or ``no_code``.
     """
     error = nu.GetAttr(nu.AttrRef(attr), "exception")
-    return nu.Str(f"{label}: ") + nu.ToStr(nu.GetAttr(error, "diagnostic"))
+    diagnostic = nu.Str(f"{label}: ") + nu.ToStr(nu.GetAttr(error, "diagnostic"))
+    if reply is None:
+        return diagnostic
+    return nu.Str(nu.If(fenceless(reply), nu.Str(no_code), diagnostic))
+
+
+def never_ran(outcome: StrArg, *, labels: tuple[str, ...] = (FAILED_LABEL, NO_CODE_LABEL)) -> Nu:
+    """True when the outcome says no program ran at all, as a Bool term.
+
+    Construction failure and a reply with no code are both this: the world is
+    exactly as the turn found it. A runtime failure is not, since the term
+    built and got part way. The two need different verdicts, because telling
+    a model to look at what changed when nothing did is telling it to invent
+    something.
+
+    Args:
+        outcome: the outcome text, usually the Ref the turn stored it in.
+        labels: prefixes that mean nothing ran.
+
+    Returns:
+        A ``Bool`` term.
+    """
+    text = nu.Str(outcome)
+    term = text.startswith(labels[0])
+    for other in labels[1:]:
+        term = nu.Or(term, text.startswith(other))
+    return term
 
 
 def crashed(*, attr: str = "error", label: str = "RUNTIME FAILED") -> Nu:

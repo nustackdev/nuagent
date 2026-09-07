@@ -34,7 +34,7 @@ if TYPE_CHECKING:
     from nu.lang import Nu, StrArg
 
 
-__all__ = ["FENCE", "fenced"]
+__all__ = ["FENCE", "fenced", "fenceless"]
 
 
 FENCE = "```"
@@ -42,6 +42,27 @@ FENCE = "```"
 # ```python / ```py / bare ```. The tag sits at the head of the chunk, so
 # stripping is a chain of removeprefix, each a no-op when it does not match.
 _TAGS = ("python", "py")
+
+
+def fenceless(text: StrArg) -> Nu:
+    """True when the reply holds no complete fenced block, as a Bool term.
+
+    Splitting on the fence yields at least three chunks when a block opened
+    and closed, so fewer than three means there is nothing fenced to take and
+    :func:`fenced` is about to fall back to the whole reply.
+
+    That fallback is right for bare source and wrong for prose, and neither
+    case is distinguishable here. The caller decides: it is the thing that
+    also knows whether the fallback then failed to construct, and a
+    construction failure on a reply with no fence is prose, not code.
+
+    Args:
+        text: the reply, as a str or any Str-yielding term.
+
+    Returns:
+        A ``Bool`` term.
+    """
+    return nu.Int(nu.Len(nu.Str(text).split(FENCE))) < 3
 
 
 def fenced(text: StrArg, *, block: Literal["first", "last"] = "first") -> Nu:

@@ -33,7 +33,7 @@ import nu
 from nu.lang.sentinels import UNSET
 
 from .extract import fenced
-from .observation import attempted, failed
+from .observation import attempted, failed, never_ran
 from .observation import observation as observe_default
 
 
@@ -58,6 +58,10 @@ def Turn(  # noqa: N802 -- a term constructor, named like the Flows it composes
     goal: Nu | None = None,
     met: str = "met",
     unmet: str = "NOT met yet; the task is unfinished, look at what changed and correct it",
+    unran: str = (
+        "NOT met, and nothing ran this turn; the world is unchanged, "
+        "so read the outcome above, fix it, and send a program"
+    ),
     extract: Callable[[Nu], Nu] = fenced,
     observe: Callable[..., Nu] = observe_default,
     on_error: Nu | None = None,
@@ -89,9 +93,14 @@ def Turn(  # noqa: N802 -- a term constructor, named like the Flows it composes
             satisfy the goal reads as a failure rather than as silence.
             ``Agent`` forwards its own goal automatically.
         met: verdict text when the goal holds.
-        unmet: verdict text when it does not. This is the only signal a
-            model gets that working-but-wrong code is wrong, so it is worth
-            phrasing as an instruction rather than a status.
+        unmet: verdict text when it does not, and the program ran. This is
+            the only signal a model gets that working-but-wrong code is
+            wrong, so it is worth phrasing as an instruction rather than a
+            status.
+        unran: verdict text when the goal does not hold and nothing ran, so
+            the world is exactly as the turn found it. Separate from
+            ``unmet`` because a model told to inspect changes that do not
+            exist invents them.
         extract: source out of the reply. Defaults to the first fenced
             block; pass ``partial(fenced, block="last")`` for the last.
         observe: builds the observation from the outcome and the state.
@@ -112,7 +121,7 @@ def Turn(  # noqa: N802 -- a term constructor, named like the Flows it composes
     """
     text = nu.Str(nu.dict(chat(messages=messages))["text"])
     source = extract(reply)
-    caught = failed() if on_error is None else on_error
+    caught = failed(reply=reply) if on_error is None else on_error
     result = attempted(draft, brace=brace, on_error=caught, on_crash=on_crash)
 
     banner = nu.Str("\n=== model ===\n") if label is None else nu.Str("\n=== ") + label + " ===\n"
@@ -140,7 +149,8 @@ def Turn(  # noqa: N802 -- a term constructor, named like the Flows it composes
     if goal is None:
         steps.append(observation.set(observe(outcome, state)))
     else:
-        verdict = nu.If(goal, nu.Str(met), nu.Str(unmet))
+        missed = nu.Str(nu.If(never_ran(outcome), nu.Str(unran), nu.Str(unmet)))
+        verdict = nu.If(goal, nu.Str(met), missed)
         steps.append(observation.set(observe(outcome, state, verdict=verdict)))
     if echo:
         steps.append(nu.print(nu.Str("--- observation ---\n") + observation))

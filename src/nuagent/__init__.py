@@ -22,8 +22,9 @@ The modules
 -----------
 
 - :mod:`~nuagent.prompt` -- system prompt as ordered sections: prose shipped
-  as package data, vocabulary generated from ``nu.inspect`` catalogues. Drop
-  or replace a section per agent.
+  as package data, vocabulary generated from ``nu.inspect`` catalogues, and
+  the caller's own Shapes and Services rendered as the app surface. Drop or
+  replace a section per agent.
 - :mod:`~nuagent.extract` -- fenced block out of a reply, as a Nu Query.
 - :mod:`~nuagent.observation` -- the yield and the state, as the next
   message.
@@ -38,9 +39,9 @@ sync.
 from __future__ import annotations
 
 from .agents import Agent
-from .extract import fenced
-from .observation import attempted, crashed, failed, observation, rendered
-from .prompt import DEFAULT_MODULES, DEFAULT_SECTIONS, system_prompt
+from .extract import fenced, fenceless
+from .observation import NO_CODE, attempted, crashed, failed, never_ran, observation, rendered
+from .prompt import DEFAULT_MODULES, DEFAULT_SECTIONS, inserted, surface_section, system_prompt
 from .turn import Turn
 
 
@@ -49,6 +50,7 @@ __version__ = "0.1.0"
 __all__ = [
     "DEFAULT_MODULES",
     "DEFAULT_SECTIONS",
+    "NO_CODE",
     "Agent",
     "Turn",
     "__version__",
@@ -56,7 +58,11 @@ __all__ = [
     "crashed",
     "failed",
     "fenced",
+    "fenceless",
+    "inserted",
+    "never_ran",
     "observation",
     "rendered",
+    "surface_section",
     "system_prompt",
 ]

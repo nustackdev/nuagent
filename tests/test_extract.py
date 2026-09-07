@@ -10,17 +10,24 @@ from __future__ import annotations
 import nu
 import pytest
 
-from nuagent.extract import fenced
+from nuagent.extract import fenced, fenceless
 
 
 class Out(nu.Shape):
     text = nu.mem.StrRef.slot()
+    flag = nu.mem.BoolRef.slot()
 
 
 def run(reply: str, **kw) -> str:
     ctx = nu.Context().bind(dict, {})
     nu.run(Out.text.set(fenced(reply, **kw)), ctx)
     return ctx.get(dict)["text"]
+
+
+def asks(reply: str) -> bool:
+    ctx = nu.Context().bind(dict, {})
+    nu.run(Out.flag.set(fenceless(reply)), ctx)
+    return ctx.get(dict)["flag"]
 
 
 FENCED = "prose\n```python\nx = 1\n```\nmore prose"
@@ -88,6 +95,25 @@ def test_an_unclosed_fence_falls_back():
 
 def test_an_empty_reply_stays_empty():
     assert run("") == ""
+
+
+# --- was there a block at all ----------------------------------------------
+
+
+def test_fenceless_separates_a_block_from_prose():
+    # The fallback cannot tell bare source from prose and does not try. This
+    # is what lets the caller say "no code block" instead of reporting a
+    # syntax error in an English sentence.
+    assert not asks(FENCED)
+    assert not asks(TWO_BLOCKS)
+    assert asks("Done. Wrote the summaries and set the count.")
+    assert asks("import nu")
+    assert asks("here you go:\n```python\nx = 1")
+    assert asks("")
+
+
+def test_fenceless_is_a_nu_term():
+    assert isinstance(fenceless("x"), nu.Nu)
 
 
 # --- it is a term, not a helper --------------------------------------------
