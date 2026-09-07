@@ -11,7 +11,7 @@ import textwrap
 
 import nu
 
-from nuagent.observation import attempted, observation
+from nuagent import attempted, observation
 
 
 class World(nu.Shape):

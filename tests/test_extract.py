@@ -10,7 +10,7 @@ from __future__ import annotations
 import nu
 import pytest
 
-from nuagent.extract import fenced, fenceless
+from nuagent import fenced, fenceless
 
 
 class Out(nu.Shape):

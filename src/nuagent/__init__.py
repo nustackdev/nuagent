@@ -25,12 +25,10 @@ The modules
   as package data, vocabulary generated from ``nu.inspect`` catalogues, and
   the caller's own Shapes and Services rendered as the app surface. Drop or
   replace a section per agent.
-- :mod:`~nuagent.extract` -- fenced block out of a reply, as a Nu Query.
-- :mod:`~nuagent.observation` -- the yield and the state, as the next
-  message.
-- :mod:`~nuagent.turn` -- one turn, usable alone as a single-shot agent.
-- :mod:`~nuagent.agents` -- composed agents. One so far: ``Agent`` (a Turn
-  under a WhileDo).
+- :mod:`~nuagent.agents` -- the turn machinery: the fenced block out of a
+  reply, the yield and the state as the next message, one turn usable alone
+  as a single-shot agent, and the composed agents. One so far: ``Agent`` (a
+  Turn under a WhileDo).
 
 Prefer ``nu.arun``: an LLM call is network-bound and blocks the loop under
 sync.
@@ -38,11 +36,20 @@ sync.
 
 from __future__ import annotations
 
-from .agents import Agent
-from .extract import fenced, fenceless
-from .observation import NO_CODE, attempted, crashed, failed, never_ran, observation, rendered
+from .agents import (
+    NO_CODE,
+    Agent,
+    Turn,
+    attempted,
+    crashed,
+    failed,
+    fenced,
+    fenceless,
+    never_ran,
+    observation,
+    rendered,
+)
 from .prompt import DEFAULT_MODULES, DEFAULT_SECTIONS, inserted, surface_section, system_prompt
-from .turn import Turn
 
 
 __version__ = "0.1.0"

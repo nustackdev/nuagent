@@ -191,7 +191,7 @@ def observation(
 
     Args:
         outcome: the program's yield, already rendered as text. Usually the
-            slot :func:`nuagent.turn.Turn` stored it in, so the program runs
+            slot :func:`nuagent.agents.turn.Turn` stored it in, so the program runs
             once and both the observation and the goal read the same value.
         state: any term describing the world afterwards, commonly a
             ``nu.Dict.of(...)`` over the slots that matter. Omitted for a

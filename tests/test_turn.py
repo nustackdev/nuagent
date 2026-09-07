@@ -17,7 +17,7 @@ import textwrap
 
 import nu
 
-from nuagent.turn import Turn
+from nuagent import Turn
 
 
 class Loop(nu.Shape):

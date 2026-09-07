@@ -36,7 +36,7 @@ from typing import TYPE_CHECKING
 
 import nu
 
-from ..turn import Turn
+from .turn import Turn
 
 
 if TYPE_CHECKING:
@@ -56,7 +56,7 @@ def Agent(  # noqa: N802 -- a term constructor, named like the Flows it composes
     report: Nu | None = None,
     **turn_args: object,
 ) -> Nu:
-    """Iterate a :func:`~nuagent.turn.Turn` until the goal holds.
+    """Iterate a :func:`~nuagent.agents.turn.Turn` until the goal holds.
 
     Args:
         goal: Bool-yielding term checked after each turn. Read the outcome
@@ -74,7 +74,7 @@ def Agent(  # noqa: N802 -- a term constructor, named like the Flows it composes
             unset slot yields EMPTY and every string this composes with it
             collapses to INVALID, which writes nothing and raises nothing.
         report: term run after the loop.
-        turn_args: forwarded to :func:`~nuagent.turn.Turn`.
+        turn_args: forwarded to :func:`~nuagent.agents.turn.Turn`.
 
     Returns:
         A Flow: initialise, seed, iterate, report.
