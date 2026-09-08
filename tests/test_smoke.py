@@ -4,7 +4,7 @@ import nuagent
 
 
 def test_version():
-    assert nuagent.__version__ == "0.1.0"
+    assert nuagent.__version__ == "0.1.1"
 
 
 def test_public_surface():

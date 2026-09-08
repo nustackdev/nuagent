@@ -10,7 +10,7 @@ build-backend = "setuptools.build_meta"
 # ============================================================================
 [project]
 name = "nuagent"
-version = "0.1.0"
+version = "0.1.1"
 description = "Toolkit for building agents on Nu."
 readme = "README.md"
 license = "Apache-2.0"
@@ -39,12 +39,14 @@ classifiers = [
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
     "Topic :: Software Development :: Libraries :: Python Modules",
 ]
 requires-python = ">=3.10"
 dependencies = [
-    "nucore",
-    "nustd[llm,cc,mem,kv]>=0.2.0",
+    "nucore>=0.2.1",
+    "nustd[llm,cc,mem,kv]>=0.2.1",
 ]
 
 [project.urls]
