@@ -22,7 +22,8 @@ The modules
 - :mod:`~nuagent.agent` -- the session Shape (the same slots on ``nu.mem`` or
   ``nu.kv``, which is all that separates an ephemeral run from a durable one),
   the fenced block out of a reply, one attempt at the program, ``turn`` usable
-  alone as a single-shot agent, and ``agent``: a turn under a WhileDo.
+  alone as a single-shot agent, and ``agent``: a turn under a WhileDo that
+  ends when the model sets ``Run.done`` in the program it writes.
 
 Prefer ``nu.arun``: an LLM call is network-bound and blocks the loop under
 sync.
@@ -35,8 +36,10 @@ from .agent import (
     FENCE,
     NO_CODE,
     NO_CODE_LABEL,
+    KVRun,
     KVSession,
     MemSession,
+    Run,
     agent,
     attempted,
     failed,
@@ -55,8 +58,10 @@ __all__ = [
     "FENCE",
     "NO_CODE",
     "NO_CODE_LABEL",
+    "KVRun",
     "KVSession",
     "MemSession",
+    "Run",
     "__version__",
     "agent",
     "attempted",

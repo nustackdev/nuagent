@@ -2,8 +2,9 @@
 
 ``chat`` is a callable returning a term, so a constant term is a model that
 always says the same thing. That makes the turn testable end to end with no
-network: extraction, construction, the outcome, the verdict and the
-observation are all the real ones.
+network: extraction, construction, the outcome and the observation are all
+the real ones, and so is the termination, because a canned reply can set
+``Run.done`` exactly as a model would.
 """
 
 from __future__ import annotations
@@ -33,6 +34,23 @@ APPENDS = src("""
 
     def out():
         return World.notes.append("a")
+""")
+
+#: What a finishing reply looks like: the work and the flag, one program.
+FINISHES = src("""
+    import nu
+
+
+    class World(nu.Shape):
+        notes = nu.mem.ListRef.slot(str)
+
+
+    class Run(nu.Shape):
+        done = nu.mem.BoolRef.slot()
+
+
+    def out():
+        return World.notes.append("a") >> Run.done.set(True)
 """)
 
 YIELDS = src("""
@@ -65,7 +83,7 @@ def canned(text: str):
 DEFAULT = object()
 
 
-def drive(reply: str, *, goal: nu.Nu | None = None, state: object = DEFAULT, **kw) -> dict:
+def drive(reply: str, *, state: object = DEFAULT, **kw) -> dict:
     if state is DEFAULT:
         state = nu.Dict.of(notes=World.notes)
     app = nu.With(
@@ -76,7 +94,6 @@ def drive(reply: str, *, goal: nu.Nu | None = None, state: object = DEFAULT, **k
             session=nuagent.MemSession,
             chat=canned(reply),
             state=state,
-            goal=goal,
             echo=False,
             **kw,
         ),
@@ -100,10 +117,10 @@ def test_the_turn_reads_every_slot_off_the_session():
     assert out["messages"][-1]["content"] == out["observation"]
 
 
-SLOTS = ["messages", "reply", "draft", "outcome", "observation", "turns", "done"]
+SLOTS = ["messages", "reply", "draft", "outcome", "observation", "turns"]
 
 
-def test_the_mem_session_holds_the_seven_slots_in_order():
+def test_the_mem_session_holds_the_six_slots_in_order():
     assert [n for n in vars(nuagent.MemSession) if not n.startswith("_")] == SLOTS
 
 
@@ -119,6 +136,27 @@ def test_the_two_sessions_differ_only_in_the_fabric():
         assert type(mem_ref).__name__ == type(kv_ref).__name__
         assert type(mem_ref).__module__.startswith("nu.mem")
         assert type(kv_ref).__module__.startswith("nu.kv")
+
+
+# --- the run shape: the model's one lever ----------------------------------
+
+
+def test_done_is_not_a_session_slot():
+    # The session is bound tagged, out of the model's reach. A done slot on it
+    # could never be the slot the model writes.
+    assert "done" not in vars(nuagent.MemSession)
+    assert "done" not in vars(nuagent.KVSession)
+
+
+def test_the_run_shape_carries_exactly_one_slot():
+    assert [n for n in vars(nuagent.Run) if not n.startswith("_")] == ["done"]
+    assert [n for n in vars(nuagent.KVRun) if not n.startswith("_")] == ["done"]
+
+
+def test_the_two_run_shapes_differ_only_in_the_fabric():
+    assert type(nuagent.Run.done).__name__ == type(nuagent.KVRun.done).__name__
+    assert type(nuagent.Run.done).__module__.startswith("nu.mem")
+    assert type(nuagent.KVRun.done).__module__.startswith("nu.kv")
 
 
 # --- prose is not source ----------------------------------------------------
@@ -206,51 +244,25 @@ def test_the_state_is_not_truncated_either():
 def test_the_program_runs_exactly_once():
     # Two Eval terms in the tree would append twice and silently corrupt the
     # world. The outcome slot is what makes it one.
-    out = drive(f"```python\n{APPENDS}```", goal=nu.Int(nu.Len(World.notes)) == 1)
+    out = drive(f"```python\n{APPENDS}```")
     assert out["notes"] == ["a"]
-    assert out["observation"].endswith("goal: met")
 
 
-# --- never-ran is not the same as ran-and-wrong ----------------------------
-
-
-def test_the_never_ran_verdict_differs_from_the_unmet_one():
-    unmet = drive(APPENDS, goal=nu.Int(nu.Len(World.notes)) > 5)
-    unran = drive(PROSE, goal=nu.Int(nu.Len(World.notes)) > 5)
-
-    assert unmet["observation"].endswith(
-        "goal: NOT met yet; the task is unfinished, look at what changed and correct it"
-    )
-    assert unran["observation"].endswith(
-        "goal: NOT met, and nothing ran this turn; the world is unchanged, "
-        "so read the outcome above, fix it, and send a program"
-    )
-    assert "look at what changed" not in unran["observation"]
-
-
-def test_a_construction_failure_is_also_never_ran():
-    out = drive("```python\ndef out(:\n```", goal=nu.Int(nu.Len(World.notes)) > 5)
-    assert "nothing ran this turn" in out["observation"]
-
-
-def test_a_met_goal_is_unchanged():
-    out = drive(APPENDS, goal=nu.Int(nu.Len(World.notes)) == 1)
-    assert out["observation"].endswith("goal: met")
-
-
-def test_the_verdicts_are_overridable():
-    out = drive(PROSE, goal=nu.Bool(False), state=None, unran="no program")
-    assert out["observation"].endswith("goal: no program")
+def test_the_turn_passes_no_judgement():
+    # The observation is what happened, never a verdict on it. Nothing here
+    # tells the model whether the work was right; the world is in `state` and
+    # it reads that for itself.
+    assert "goal" not in drive(APPENDS)["observation"]
+    assert "goal" not in drive(PROSE)["observation"]
 
 
 # --- the loop --------------------------------------------------------------
 
 
-def loop(reply: str, *, goal: nu.Nu, max_turns: int = 3) -> dict:
+def loop(reply: str, *, max_turns: int = 3) -> dict:
     agent = nuagent.agent(
         session=nuagent.MemSession,
         chat=canned(reply),
-        goal=goal,
         state=nu.Dict.of(notes=World.notes),
         max_turns=max_turns,
         start=nuagent.MemSession.messages.set([]) >> World.notes.set([]),
@@ -261,15 +273,33 @@ def loop(reply: str, *, goal: nu.Nu, max_turns: int = 3) -> dict:
     return ctx.get(dict)
 
 
-def test_the_loop_stops_the_turn_the_goal_holds():
-    out = loop(APPENDS, goal=nu.Int(nu.Len(World.notes)) >= 1)
+def test_the_loop_stops_the_turn_the_model_sets_the_ref():
+    out = loop(FINISHES)
     assert out["turns"] == 1
     assert out["done"] is True
     assert out["notes"] == ["a"]  # one turn, one append
 
 
+def test_the_model_writes_the_slot_the_loop_reads():
+    # Not two slots that are supposed to agree: the model's own Run
+    # declaration addresses by slot name into the same store the loop reads.
+    out = loop(FINISHES)
+    read_back = nu.run(nuagent.Run.done, nu.Context().bind(dict, out))[0]
+    assert read_back is True
+    assert out["done"] is True
+
+
+def test_working_code_that_never_finishes_spends_the_budget():
+    # The program builds, runs and changes the world every turn. Nothing about
+    # that ends the run, so it goes to the wall.
+    out = loop(APPENDS, max_turns=3)
+    assert out["turns"] == 3
+    assert out["done"] is False
+    assert out["notes"] == ["a", "a", "a"]
+
+
 def test_the_loop_spends_its_budget_and_gives_up():
-    out = loop(PROSE, goal=nu.Int(nu.Len(World.notes)) > 5, max_turns=3)
+    out = loop(PROSE, max_turns=3)
     assert out["turns"] == 3
     assert out["done"] is False
 
@@ -282,7 +312,6 @@ def test_max_turns_takes_a_ref():
     agent = nuagent.agent(
         session=nuagent.MemSession,
         chat=canned(PROSE),
-        goal=nu.Bool(False),
         max_turns=Budget.limit,
         start=Budget.limit.set(2) >> nuagent.MemSession.messages.set([]),
         echo=False,
@@ -295,5 +324,5 @@ def test_max_turns_takes_a_ref():
 def test_start_runs_before_the_first_turn():
     # Without it messages is unset, which yields EMPTY, which collapses the
     # concatenations to INVALID, and the whole run fails silently.
-    out = loop(APPENDS, goal=nu.Int(nu.Len(World.notes)) >= 1)
+    out = loop(FINISHES)
     assert out["messages"][0]["role"] == "assistant"

@@ -49,6 +49,7 @@ PROSE: tuple[str, ...] = (
     "crashcourse",
     "examples",
     "protocol",
+    "finish",
     "inspect",
 )
 

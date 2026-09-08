@@ -65,6 +65,7 @@ def test_section_order_is_the_agreed_order():
         "crashcourse",
         "examples",
         "protocol",
+        "finish",
         "inspect",
     ]
 
@@ -100,6 +101,7 @@ def test_a_section_can_be_dropped():
         "thesis",
         "examples",
         "protocol",
+        "finish",
         "inspect",
         "catalogue",
     ]
@@ -332,7 +334,7 @@ def test_no_method_table_leaks_in():
     text = render_surface(APP)
     for leaked in (".set(...)", ".is_empty(...)", "CollectionResultT", "methods (", "-> Bool"):
         assert leaked not in text, leaked
-    assert len(text.splitlines()) < 60
+    assert len(render_surface(APP, run=None).splitlines()) < 60
 
 
 def test_a_module_contributes_every_shape_and_service_it_declares():
@@ -348,7 +350,8 @@ def test_naming_a_class_twice_renders_it_once():
     import sys
 
     text = render_surface((sys.modules[__name__], Wall))
-    assert text.count("## shape  ") == len(app_records((Wall, Widget)))
+    # the caller's shapes, plus the Run block that always comes last
+    assert text.count("## shape  ") == len(app_records((Wall, Widget))) + 1
 
 
 def test_anything_that_is_not_a_declared_class_raises():
@@ -358,6 +361,35 @@ def test_anything_that_is_not_a_declared_class_raises():
 
 def test_an_empty_surface_says_so_rather_than_rendering_nothing():
     assert "nothing is bound" in render_surface(())
+
+
+# --- the run shape rides on every surface ----------------------------------
+
+
+def test_the_run_shape_is_on_the_surface_without_the_caller_naming_it():
+    # The model cannot end the run without redeclaring it, so it is not a fact
+    # the caller should have to remember at every call site.
+    text = render_surface(APP)
+    assert "shapes.Run" in text
+    assert "  done               ref     BoolRef" in text
+    assert text.index("shapes.Run") > text.index(".Clock")  # last, after the app
+
+
+def test_the_run_shape_is_on_an_otherwise_empty_surface_too():
+    assert "shapes.Run" in render_surface(())
+
+
+def test_the_run_shape_can_be_swapped_or_dropped():
+    assert "nu.kv" in render_surface((Wall,), run=nuagent.KVRun)
+    assert "Run" not in render_surface((Wall,), run=None)
+
+
+def test_the_section_carries_the_run_shape_through():
+    text = system_prompt(TASK, sections=inserted(DEFAULT_SECTIONS, surface_section(APP)))
+    assert "shapes.Run" in text
+    assert "shapes.Run" not in system_prompt(
+        TASK, sections=inserted(DEFAULT_SECTIONS, surface_section(APP, run=None))
+    )
 
 
 def test_the_surface_is_a_section_that_can_be_added_and_dropped():

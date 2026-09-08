@@ -45,7 +45,7 @@ NO_CODE_LABEL = "NO CODE BLOCK"
 NO_CODE = (
     f"{NO_CODE_LABEL}: your reply contained no fenced code block, so nothing ran. "
     "Prose is not an action here. Reply with one fenced python block defining "
-    "out(); to claim the task is done, send a program that yields the evidence."
+    "out(); to finish, send a program that sets Run.done."
 )
 
 

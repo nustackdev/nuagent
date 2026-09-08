@@ -2,8 +2,14 @@
 
 A turn is ask, extract, run, observe. It is a Nu term like any other, so run
 one and it is a single-shot agent; put it under ``agent`` and it iterates
-until a goal holds. There is no python ``while`` anywhere, and no tool schema:
-the model's action *is* the program.
+until the model says it is finished. There is no python ``while`` anywhere,
+and no tool schema: the model's action *is* the program.
+
+Termination is the model's, not the host's. There is no goal predicate: the
+model writes ``Run.done.set(True)`` into the program that finishes the work,
+and the loop exits on that Ref. A predicate over the world tests what a
+program did, not whether the task is done, and it is gameable, duplicated
+against the prose task, and unwritable for anything judgement-shaped.
 """
 
 from __future__ import annotations
@@ -13,7 +19,8 @@ from typing import TYPE_CHECKING
 import nu
 from nu.lang import UNSET
 
-from .utils import FAILED_LABEL, NO_CODE_LABEL, attempted, failed, fenced
+from .shapes import Run
+from .utils import attempted, failed, fenced
 
 
 if TYPE_CHECKING:
@@ -21,17 +28,10 @@ if TYPE_CHECKING:
 
     from nu import IntArg, Nu
 
-    from .shapes import KVSession, MemSession
+    from .shapes import KVRun, KVSession, MemSession
 
 
 __all__ = ["agent", "turn"]
-
-
-UNMET = "NOT met yet; the task is unfinished, look at what changed and correct it"
-UNRAN = (
-    "NOT met, and nothing ran this turn; the world is unchanged, "
-    "so read the outcome above, fix it, and send a program"
-)
 
 
 def turn(
@@ -39,10 +39,6 @@ def turn(
     session: type[KVSession | MemSession],
     chat: Callable[..., Nu],
     state: Nu | object | None = None,
-    goal: Nu | None = None,
-    met: str = "met",
-    unmet: str = UNMET,
-    unran: str = UNRAN,
     extract: Callable[[Nu], Nu] = fenced,
     on_error: Nu | None = None,
     on_crash: Nu | None = None,
@@ -61,16 +57,6 @@ def turn(
             ``messages=``.
         state: term describing the world after the program ran, appended to
             the observation. Omit for a read-only agent.
-        goal: the Bool term the loop stops on. Passed here it also reaches the
-            model, so a program that runs but does not satisfy it reads as a
-            failure rather than as silence. ``agent`` forwards its own.
-        met: verdict text when the goal holds.
-        unmet: verdict text when it does not, and the program ran. The only
-            signal a model gets that working-but-wrong code is wrong, so it is
-            phrased as an instruction rather than a status.
-        unran: verdict text when the goal does not hold and nothing ran.
-            Separate from ``unmet`` because a model told to inspect changes
-            that do not exist invents them.
         extract: source out of the reply. Pass
             ``partial(fenced, block="last")`` for the last block.
         on_error: the branch when the module does not construct. Defaults to
@@ -79,17 +65,20 @@ def turn(
         brace: tag of the ``PyBrace`` to construct in.
         echo: print the reply and the observation as they happen.
         label: prefix for the echoed reply, e.g. a turn counter.
-        after: term run at the end of the turn. Where a loop puts its counter
-            and its goal check.
+        after: term run at the end of the turn. Where a loop puts its counter.
 
     Returns:
         A Flow: one turn, ready to run once or to iterate.
 
     Notes:
         - The program runs exactly once. Its yield lands in ``session.outcome``
-          and both the observation and the goal read it from there; composing
-          it into each directly would put two ``Eval`` terms in the tree and
-          run an appending program twice.
+          and the observation reads it from there; composing it in directly
+          would put two ``Eval`` terms in the tree and run an appending
+          program twice.
+        - A construction ``Diagnostic``, the no-code message and a runtime
+          error all land in ``outcome`` and reach the model as the next
+          message. That is the repair loop, and it is the only feedback there
+          is: nothing here judges the work.
         - Nothing is truncated. A model shown half a list it just wrote cannot
           tell a landed append from a failed one, so it appends again and the
           observation grows. The yield is not cut either: for a lookup turn it
@@ -139,11 +128,6 @@ def turn(
     observed = nu.Str("outcome: ") + outcome
     if state is not None:
         observed = observed + "\nstate: " + nu.ToStr(nu.Repr(state))
-    if goal is not None:
-        ran = nu.Str(outcome)
-        never_ran = nu.Or(ran.startswith(FAILED_LABEL), ran.startswith(NO_CODE_LABEL))
-        missed = nu.Str(nu.If(never_ran, nu.Str(unran), nu.Str(unmet)))
-        observed = observed + "\ngoal: " + nu.Str(nu.If(goal, nu.Str(met), missed))
     steps.append(observation.set(nu.Str(observed)))
 
     if echo:
@@ -164,21 +148,23 @@ def agent(
     *,
     session: type[KVSession | MemSession],
     chat: Callable[..., Nu],
-    goal: Nu,
+    run: type[KVRun | Run] = Run,
     max_turns: IntArg = 6,
     start: Nu | None = None,
     report: Nu | None = None,
     **turn_args: object,
 ) -> Nu:
-    """Iterate a :func:`turn` until the goal holds or the budget runs out.
+    """Iterate a :func:`turn` until the model is done or the budget runs out.
 
     Args:
-        session: the Shape class holding the run's slots. ``turns`` and
-            ``done`` come off it.
+        session: the Shape class holding the host's slots. ``turns`` comes off
+            it.
         chat: the bound chat method.
-        goal: Bool term checked after each turn. It may read the outcome as
-            easily as the world, which is what lets a read-only agent (answer
-            a question, draft a plan) terminate at all.
+        run: the Shape carrying the one slot the model writes to finish,
+            :class:`~.shapes.Run` on nu.mem or :class:`~.shapes.KVRun` on
+            nu.kv. It needs no binding of its own: it addresses by slot name
+            into whatever store the app already bound untagged, which is the
+            same store the model's own redeclaration reaches.
         max_turns: the budget. A Ref works as well as an int, so a running
             agent's budget can be raised from outside.
         start: term run before the first turn. Not optional in practice: the
@@ -192,19 +178,24 @@ def agent(
         A Flow: initialise, seed, iterate, report.
 
     Notes:
-        - Nothing here inspects the world. Read ``session.done`` afterwards to
-          tell success from exhaustion.
+        - The exit condition is the Ref the model writes, read back
+          unchanged. There is no second slot for the two to disagree about,
+          and no host-side predicate over the world: a state predicate tests
+          what a program did, not whether the task is done.
+        - ``done`` is set False before the first turn. Read unset it yields
+          EMPTY, and the loop condition would never be a Bool at all.
+        - Read ``run.done`` afterwards to tell a finished run from an
+          exhausted one.
     """
     turns = session.turns
-    done = session.done
+    done = run.done
 
     label = nu.Str("turn ") + nu.ToStr(turns) + " | model"
     body = turn(
         session=session,
         chat=chat,
         label=label,
-        goal=goal,
-        after=turns.inc() >> nu.IfDo(goal, done.set(True)),
+        after=turns.inc(),
         **turn_args,  # type: ignore[arg-type]
     )
 

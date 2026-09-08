@@ -20,9 +20,10 @@ has to look ``keys`` up: the surface section lists ``tasks`` as a
 ``ShapesDictRef`` and no verbs at all, and ``ShapesDictRef`` is a nu.mem Ref,
 which the nucore catalogue does not carry.
 
-The goal reads the world, not the budget: every high-priority task has a
-non-empty summary and ``open_count`` matches the number of undone tasks. The
-loop stops the turn that becomes true.
+The model ends the run itself: it writes ``Run.done.set(True)`` into the
+program that finishes the work, and the loop stops that turn. Nothing here
+judges the board. ``main`` still checks it afterwards, but that is the example
+verifying itself, not the agent's stopping rule.
 
 Two dict fabrics, and the split matters. The agent's own working memory is
 bound tagged to ``MemSession``, so nothing the model writes can reach it. The
@@ -30,7 +31,8 @@ board is bound untagged on the Context, for two reasons: nu.mem addresses by
 slot name and the model's module declares its own ``Board`` class, where a
 tagged binding is keyed on the host's class object and would not resolve;
 and ``nu.Provide`` binds a copy of the dict it is given, so a board bound
-that way is unreadable by the caller once the run ends.
+that way is unreadable by the caller once the run ends. ``Run`` rides in that
+same untagged store, which is exactly why the model can reach it too.
 
 Run::
 
@@ -220,7 +222,7 @@ def chat(*, messages: Nu) -> Nu:
     return Bot.ask(prompt=FormatMessages(messages))
 
 
-# --- prompt, world, goal, state -------------------------------------------
+# --- prompt, world, state -------------------------------------------------
 
 
 def prompt() -> str:
@@ -249,22 +251,6 @@ def seed_world() -> Nu:
     return step
 
 
-def goal() -> Nu:
-    """True once every high-priority task is summarised and the counter is right.
-
-    Reads the world, not the outcome and not the turn count, so a run that
-    succeeds on turn two stops on turn two. The summary tests are built from
-    the seed because the host knows which tasks started empty; the counter
-    test is the aggregate the model has to derive for itself.
-    """
-    checks: list[Nu] = [nu.Int(nu.Len(Board.tasks[tid].summary)) > 0 for tid in NEEDS]
-    checks.append(nu.Int(Board.open_count) == OPEN)
-    term = checks[0]
-    for check in checks[1:]:
-        term = nu.And(term, check)
-    return term
-
-
 def state() -> Nu:
     """What the model sees of the world each turn. The whole board, it is small."""
     return nu.Dict.of(open_count=Board.open_count, tasks=Board.tasks)
@@ -291,7 +277,6 @@ def agent() -> Nu:
         session=nuagent.MemSession,
         chat=chat,
         state=state(),
-        goal=goal(),
         max_turns=8,
         start=seed,
         brace=UNSET,

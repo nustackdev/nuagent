@@ -40,6 +40,7 @@ from nu.inspect import (
 )
 from nu.inspect.entry import is_service, is_shape
 
+from ..agent.shapes import Run
 from .sections import Section
 
 
@@ -94,7 +95,7 @@ class Ledger(nu.Shape):
 """
 
 
-def surface_section(app: tuple[ModuleType | type, ...]) -> Section:
+def surface_section(app: tuple[ModuleType | type, ...], *, run: type | None = Run) -> Section:
     """The app surface as a prompt section.
 
     Args:
@@ -103,6 +104,11 @@ def surface_section(app: tuple[ModuleType | type, ...]) -> Section:
             a class contributes itself. Mixing the two is normal, since an app
             commonly declares its Shapes in one module and hands the agent a
             subset.
+        run: the run Shape, rendered last. It is on the surface by default
+            because the model cannot end the run without redeclaring it, and
+            a fact every agent needs does not belong at every call site. Pass
+            ``KVRun`` for a durable app, or ``None`` for a single ``turn``,
+            which has no loop to end.
 
     Returns:
         A Section named ``surface``.
@@ -111,7 +117,7 @@ def surface_section(app: tuple[ModuleType | type, ...]) -> Section:
         >>> from nuagent.prompt import DEFAULT_SECTIONS, inserted, surface_section
         >>> sections = inserted(DEFAULT_SECTIONS, surface_section((Board, Task)))
     """
-    return Section("surface", lambda: render_surface(app))
+    return Section("surface", lambda: render_surface(app, run=run))
 
 
 def app_records(app: tuple[ModuleType | type, ...]) -> tuple[Record, ...]:
@@ -150,13 +156,20 @@ def app_records(app: tuple[ModuleType | type, ...]) -> tuple[Record, ...]:
     return tuple(unique)
 
 
-def render_surface(app: tuple[ModuleType | type, ...]) -> str:
-    """The framing, then one block per declared class."""
+def render_surface(app: tuple[ModuleType | type, ...], *, run: type | None = Run) -> str:
+    """The framing, then one block per declared class, then the run Shape.
+
+    ``run`` comes last and separately from the app's own classes: it is not
+    part of the app, it is how the model ends the loop, and an app with
+    nothing bound still has one.
+    """
     records = app_records(app)
     parts = [PREAMBLE]
     if not records:
         parts.append("(nothing is bound on your surface)")
     parts.extend(_block(record) for record in records)
+    if run is not None:
+        parts.append(_block(parse_shape(run)))
     return "\n\n".join(parts)
 
 

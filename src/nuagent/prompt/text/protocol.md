@@ -6,7 +6,7 @@ Write exactly one fenced code block per reply. The host splits your reply on the
 
 Every reply must carry a code block. Prose is not an action: the host runs programs and nothing else, so a reply without one runs nothing, changes nothing, and costs a turn. You get back `NO CODE BLOCK: your reply contained no fenced code block, so nothing ran`.
 
-The run ends when the goal holds, not when you say it does. If you believe the task is complete, say it as a program that yields the evidence, and read the `goal` line to find out whether you were right.
+The run ends when you set `Run.done`, not when you say in prose that the task is complete. See **Finishing** below.
 
 The block is a Python module:
 
@@ -40,17 +40,13 @@ The next user message is exactly this, and nothing else:
 
     outcome: <repr of what the term yielded>
     state: <the world after the program ran>
-    goal: <verdict>
 
-`state` appears when the host supplies one. `goal` appears when there is a goal. You never see a traceback, a tool result, or the host's stdout.
+`state` appears when the host supplies one. You never see a traceback, a tool result, or the host's stdout.
 
 Read it like this:
 
 - `outcome` is the yield, repr'd. Newlines arrive as a literal `\n` inside one quoted string.
 - **A Command yields nothing, so `outcome: None` is normal.** A chain of writes that completely succeeded reports `outcome: None`. It is not a failure and not silence. `state` is where the evidence of your work is. Read `state` before rewriting anything: if the write landed, do not do it again.
-- `goal: met` means the task is done. Stop writing programs and say so.
-- `goal: NOT met yet...` means your program built and ran and did the wrong thing. That is the only signal that working code is still wrong. Correct it.
-- `goal: NOT met, and nothing ran this turn...` means there was no program: `state` is unchanged and there is nothing in it to learn from. Fix what the `outcome` says and send one.
 - `nu.print(...)` writes to the **host's** stdout. You never see it, and the outcome is `None`. To read a value, `return` it from `out()`.
 
 ## When it fails
