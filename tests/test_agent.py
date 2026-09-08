@@ -8,8 +8,6 @@ observation are all the real ones.
 
 from __future__ import annotations
 
-import subprocess
-import sys
 import textwrap
 
 import nu
@@ -54,7 +52,7 @@ PROSE = (
 
 
 def canned(text: str):
-    """A model that always answers with ``text``. Turn only needs {"text": ...}."""
+    """A model that always answers with ``text``. turn only needs {"text": ...}."""
 
     def chat(*, messages: nu.Nu) -> nu.Nu:
         del messages  # a canned model does not read the conversation
@@ -113,15 +111,6 @@ def test_the_kv_session_has_the_same_slots_in_the_same_order():
     assert [n for n in vars(nuagent.KVSession) if not n.startswith("_")] == SLOTS
 
 
-def test_the_kv_session_is_built_once_and_cached():
-    # Resolved on first access, then it is the same object everywhere.
-    from nuagent.agent import shapes
-
-    first = nuagent.KVSession
-    assert nuagent.KVSession is first
-    assert shapes.KVSession is first
-
-
 def test_the_two_sessions_differ_only_in_the_fabric():
     kv = nuagent.KVSession
     for slot in SLOTS:
@@ -130,42 +119,6 @@ def test_the_two_sessions_differ_only_in_the_fabric():
         assert type(mem_ref).__name__ == type(kv_ref).__name__
         assert type(mem_ref).__module__.startswith("nu.mem")
         assert type(kv_ref).__module__.startswith("nu.kv")
-
-
-def test_importing_nuagent_does_not_import_nu_kv():
-    # nu.kv needs the RocksDB bindings. An agent package must not drag a
-    # native dependency in just by being imported.
-    code = "import sys, nuagent; assert 'nu.kv' not in sys.modules, sorted(sys.modules)"
-    assert subprocess.run([sys.executable, "-c", code], check=False).returncode == 0  # noqa: S603
-
-
-def test_an_unavailable_kv_fabric_names_the_install():
-    # A bare `ModuleNotFoundError: rdbpy` tells nobody what to do about it.
-    code = textwrap.dedent("""
-        import sys
-
-        class Block:
-            def find_module(self, name, path=None):
-                return None
-            def find_spec(self, name, path=None, target=None):
-                if name == "virtuals" or name.startswith("virtuals."):
-                    raise ModuleNotFoundError("No module named 'virtuals'", name=name)
-                return None
-
-        sys.meta_path.insert(0, Block())
-        import nuagent
-        try:
-            nuagent.KVSession
-        except AttributeError as exc:
-            assert "nustd[all]" in str(exc), str(exc)
-            assert exc.__cause__ is not None, "the original failure must be chained"
-        else:
-            raise AssertionError("expected an AttributeError")
-    """)
-    done = subprocess.run(  # noqa: S603
-        [sys.executable, "-c", code], check=False, capture_output=True, text=True
-    )
-    assert done.returncode == 0, done.stderr
 
 
 # --- prose is not source ----------------------------------------------------

@@ -216,7 +216,7 @@ def _render(msgs: list[dict]) -> str:
 
 
 def chat(*, messages: Nu) -> Nu:
-    """Adapter matching Turn's chat signature. Bot.ask takes prompt=."""
+    """Adapter matching turn's chat signature. Bot.ask takes prompt=."""
     return Bot.ask(prompt=FormatMessages(messages))
 
 

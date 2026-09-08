@@ -1,7 +1,7 @@
 """The session: every slot a turn reads or writes, one Shape per fabric.
 
 The same seven slots fill the same roles in every turn, so they are a Shape
-rather than a dozen Ref arguments. ``Turn`` and ``Agent`` take one ``session``
+rather than a dozen Ref arguments. ``turn`` and ``agent`` take one ``session``
 and read the rest off it.
 """
 

@@ -21,8 +21,8 @@ The modules
   replace a section per agent.
 - :mod:`~nuagent.agent` -- the session Shape (the same slots on ``nu.mem`` or
   ``nu.kv``, which is all that separates an ephemeral run from a durable one),
-  the fenced block out of a reply, one attempt at the program, ``Turn`` usable
-  alone as a single-shot agent, and ``Agent``: a Turn under a WhileDo.
+  the fenced block out of a reply, one attempt at the program, ``turn`` usable
+  alone as a single-shot agent, and ``agent``: a turn under a WhileDo.
 
 Prefer ``nu.arun``: an LLM call is network-bound and blocks the loop under
 sync.

@@ -2,7 +2,7 @@
 
 - :mod:`shapes` -- the slots one run needs, one Shape per fabric.
 - :mod:`utils` -- fenced-block extraction and one attempt at the program.
-- :mod:`agent` -- ``Turn``, and ``Agent`` as a Turn under a ``WhileDo``.
+- :mod:`agent` -- ``turn``, and ``agent`` as a turn under a ``WhileDo``.
 """
 
 from __future__ import annotations

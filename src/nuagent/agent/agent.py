@@ -1,7 +1,7 @@
 """The agent: one turn, and that turn under a ``WhileDo``.
 
 A turn is ask, extract, run, observe. It is a Nu term like any other, so run
-one and it is a single-shot agent; put it under ``Agent`` and it iterates
+one and it is a single-shot agent; put it under ``agent`` and it iterates
 until a goal holds. There is no python ``while`` anywhere, and no tool schema:
 the model's action *is* the program.
 """
@@ -36,7 +36,7 @@ UNRAN = (
 
 def turn(
     *,
-    session: object,
+    session: type[KVSession | MemSession],
     chat: Callable[..., Nu],
     state: Nu | object | None = None,
     goal: Nu | None = None,
@@ -54,15 +54,16 @@ def turn(
     """Compose one turn of an agent.
 
     Args:
-        session: a Shape holding the run's slots, :class:`~.shapes.MemSession`
-            or :class:`~.shapes.KvSession` or one shaped like them.
+        session: the Shape class holding the run's slots,
+            :class:`~.shapes.MemSession` or :class:`~.shapes.KVSession` or one
+            shaped like them.
         chat: the bound chat method, e.g. ``Bot.chat``. Called with
             ``messages=``.
         state: term describing the world after the program ran, appended to
             the observation. Omit for a read-only agent.
         goal: the Bool term the loop stops on. Passed here it also reaches the
             model, so a program that runs but does not satisfy it reads as a
-            failure rather than as silence. ``Agent`` forwards its own.
+            failure rather than as silence. ``agent`` forwards its own.
         met: verdict text when the goal holds.
         unmet: verdict text when it does not, and the program ran. The only
             signal a model gets that working-but-wrong code is wrong, so it is
@@ -169,10 +170,11 @@ def agent(
     report: Nu | None = None,
     **turn_args: object,
 ) -> Nu:
-    """Iterate a :func:`Turn` until the goal holds or the budget runs out.
+    """Iterate a :func:`turn` until the goal holds or the budget runs out.
 
     Args:
-        session: the run's slots. ``turns`` and ``done`` come off it.
+        session: the Shape class holding the run's slots. ``turns`` and
+            ``done`` come off it.
         chat: the bound chat method.
         goal: Bool term checked after each turn. It may read the outcome as
             easily as the world, which is what lets a read-only agent (answer
@@ -184,7 +186,7 @@ def agent(
             slot yields EMPTY, which collapses every string composed with it
             to INVALID, which writes nothing and raises nothing.
         report: term run after the loop.
-        turn_args: forwarded to :func:`Turn`.
+        turn_args: forwarded to :func:`turn`.
 
     Returns:
         A Flow: initialise, seed, iterate, report.
