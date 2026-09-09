@@ -9,7 +9,23 @@
 
 <br/>
 
-Agents are usually bolted onto a stack that was never one thing to begin with, so you hand-write a tool for every corner of it and the agent only ever sees the corners you remembered. Nu apps are already coherent: one primitive over data, UI, compute and services. So an agent that speaks Nu inherits all of it. It answers with a program instead of a call, which means one turn can sequence, branch and loop over your real state. It queries a billion-row `nu.kv` store the same way it reads a counter. Bind `nu.cluster` and what it writes runs on the cluster. Nothing to register, nothing to keep in sync, and no part of your app it cannot reach.
+A tool-calling agent picks one registered function per turn and answers with JSON. Six steps, six round trips, every branch routed back through the model.
+
+Here the action is a program. The model writes one Nu term, an immutable expression tree, that reads, branches and writes against the Refs you bound. nuagent runs it and feeds back what it yielded plus the state it left behind.
+
+```python
+def out():
+    return nu.ForEachDo(
+        nu.Iter(nu.Literal(["mon", "tue", "wed"])),
+        Notes.items.append(nu.AttrRef("item")),
+    ) >> Notes.count.set(nu.Len(Notes.items)) >> Run.done.set(True)
+```
+
+A loop, three writes, a derived count and the run ending itself. One reply.
+
+- Nothing to register, no schema to keep in sync. Capability is the set of Refs bound around the loop, so bind a different set and it is a different agent with the same code.
+- Reach is whatever Nu reaches: a dict, a `nu.kv` store on disk, an http service, anything a fabric backs. The shipped catalogue is nucore only, so finding a fabric's verbs costs the model a turn.
+- The loop is a term as well: a `WhileDo` over the turn, no python driver. Swap `MemSession` for `KVSession` and the same run is durable.
 
 ## Installation
 
