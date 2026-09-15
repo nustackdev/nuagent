@@ -11,22 +11,23 @@ import asyncio
 import textwrap
 
 import nu
+import nustd
 import pytest
 
 from nuagent import attempted, fenced
 
 
 class Out(nu.Shape):
-    text = nu.mem.StrRef.slot()
+    text = nustd.mem.StrRef.slot()
 
 
 class World(nu.Shape):
-    notes = nu.mem.ListRef.slot(str)
+    notes = nustd.mem.ListRef.slot(str)
 
 
 class Loop(nu.Shape):
-    draft = nu.mem.ProgramRef.slot()
-    outcome = nu.mem.StrRef.slot()
+    draft = nustd.mem.ProgramRef.slot()
+    outcome = nustd.mem.StrRef.slot()
 
 
 def run(reply: str, **kw) -> str:
@@ -124,10 +125,11 @@ def src(text: str) -> str:
 
 APPENDS = src("""
     import nu
+    import nustd
 
 
     class World(nu.Shape):
-        notes = nu.mem.ListRef.slot(str)
+        notes = nustd.mem.ListRef.slot(str)
 
 
     def out():
@@ -154,10 +156,11 @@ BROKEN = src("""
 # int is a TypeError deep in the arithmetic thunk, not a construction error.
 CRASHES = src("""
     import nu
+    import nustd
 
 
     class World(nu.Shape):
-        notes = nu.mem.ListRef.slot(str)
+        notes = nustd.mem.ListRef.slot(str)
 
 
     def out():

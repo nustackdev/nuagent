@@ -4,7 +4,7 @@ You end the run, and the only way to end it is a write. One extra Shape is on yo
 
 ```python
 class Run(nu.Shape):
-    done = nu.mem.BoolRef.slot()
+    done = nustd.mem.BoolRef.slot()
 ```
 
 Redeclare it in your module like any other Shape, taking the fabric off its heading in your app surface, and set `done` in the same program that finishes the work:

@@ -10,6 +10,7 @@ import zipfile
 from pathlib import Path
 
 import nu
+import nustd
 import pytest
 
 import nuagent
@@ -123,11 +124,11 @@ def test_a_section_can_be_replaced():
 
 
 def test_the_catalogue_is_replaceable_to_add_a_fabric():
-    import nu.mem
+    import nustd.mem
 
-    swapped = replaced(DEFAULT_SECTIONS, catalogue_section((*DEFAULT_MODULES, nu.mem)))
+    swapped = replaced(DEFAULT_SECTIONS, catalogue_section((*DEFAULT_MODULES, nustd.mem)))
     text = system_prompt(TASK, sections=swapped)
-    assert "## nu.mem" in text
+    assert "## nustd.mem" in text
     assert "IntRef" in text
 
 
@@ -282,21 +283,21 @@ class Widget(nu.Shape):
         - `label` is what the UI prints, never the id.
     """
 
-    label = nu.mem.StrRef.slot()
-    weight = nu.mem.IntRef.slot()
+    label = nustd.mem.StrRef.slot()
+    weight = nustd.mem.IntRef.slot()
 
 
 class Wall(nu.Shape):
     """Every widget, by id."""
 
-    widgets = nu.mem.ShapesDictRef.slot(Widget, str)
-    total = nu.mem.IntRef.slot()
+    widgets = nustd.mem.ShapesDictRef.slot(Widget, str)
+    total = nustd.mem.IntRef.slot()
 
 
 class Clock(nu.Service):
     """Wall clock, as a Service."""
 
-    now = nu.service.QueryRef.method()
+    now = nustd.service.QueryRef.method()
 
 
 APP = (Wall, Widget, Clock)
@@ -317,8 +318,8 @@ def test_every_entry_appears_with_its_type():
 
 def test_the_fabric_is_named_so_a_slot_can_be_redeclared():
     text = render_surface((Wall,))
-    assert "(nu.mem)" in text
-    assert "(nu.service)" in render_surface((Clock,))
+    assert "(nustd.mem)" in text
+    assert "(nustd.service)" in render_surface((Clock,))
 
 
 def test_prose_and_notes_ride_along():
@@ -380,7 +381,7 @@ def test_the_run_shape_is_on_an_otherwise_empty_surface_too():
 
 
 def test_the_run_shape_can_be_swapped_or_dropped():
-    assert "nu.kv" in render_surface((Wall,), run=nuagent.KVRun)
+    assert "nustd.kv" in render_surface((Wall,), run=nuagent.KVRun)
     assert "Run" not in render_surface((Wall,), run=None)
 
 

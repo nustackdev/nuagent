@@ -40,12 +40,13 @@ What may nest in what is one rule: **a value slot needs something that yields; a
 
 ```python
 import nu
+import nustd
 
 
 class Cart(nu.Shape):
-    total = nu.mem.IntRef.slot()
-    items = nu.mem.ListRef.slot(str)
-    prices = nu.mem.ListRef.slot(int)
+    total = nustd.mem.IntRef.slot()
+    items = nustd.mem.ListRef.slot(str)
+    prices = nustd.mem.ListRef.slot(int)
 
 
 ok = Cart.total.set(Cart.total * 2)  # Ref read inside a Command's value slot

@@ -6,21 +6,22 @@ A Shape declares slots. Each slot is a Ref: an address in a fabric.
 
 ```python
 import nu
+import nustd
 
 
 class Movie(nu.Shape):
-    title: nu.mem.StrRef
-    year: nu.mem.IntRef
+    title: nustd.mem.StrRef
+    year: nustd.mem.IntRef
 
 
 class Library(nu.Shape):
-    name: nu.mem.StrRef
-    tags = nu.mem.ListRef.slot(str)
-    scores = nu.mem.DictRef.slot(int)
-    featured = nu.mem.ShapeRef.slot(Movie)
+    name: nustd.mem.StrRef
+    tags = nustd.mem.ListRef.slot(str)
+    scores = nustd.mem.DictRef.slot(int)
+    featured = nustd.mem.ShapeRef.slot(Movie)
 ```
 
-Two slot forms, both correct, mixable in one class. Annotation (`title: nu.mem.StrRef`) when the Ref class alone is the whole declaration. `.slot(...)` when the slot takes an argument (`str`, `int`, a Shape) or config (`view=`, `size=`, `capacity=`). Never both on one slot. Every shipped example in the nu repo uses `.slot()` for every slot, so that is the form you will see in the wild.
+Two slot forms, both correct, mixable in one class. Annotation (`title: nustd.mem.StrRef`) when the Ref class alone is the whole declaration. `.slot(...)` when the slot takes an argument (`str`, `int`, a Shape) or config (`view=`, `size=`, `capacity=`). Never both on one slot. Every shipped example in the nu repo uses `.slot()` for every slot, so that is the form you will see in the wild.
 
 **Shapes are never instantiated.** `Library()` is never written. Refs are class attributes used unbound:
 
@@ -38,10 +39,10 @@ A Service declares method Refs over a plain Python object. Pick the Ref by kind.
 
 ```python
 class Calc(nu.Service):
-    add = nu.service.QueryRef.method()  # yields, no mutation
-    bump = nu.service.ActionRef.method()  # mutates and yields
-    wipe = nu.service.CommandRef.method(name="reset")  # mutates, yields nothing
-    squares = nu.service.StreamQueryRef.method(name="range")  # generator
+    add = nustd.service.QueryRef.method()  # yields, no mutation
+    bump = nustd.service.ActionRef.method()  # mutates and yields
+    wipe = nustd.service.CommandRef.method(name="reset")  # mutates, yields nothing
+    squares = nustd.service.StreamQueryRef.method(name="range")  # generator
 ```
 
 Method Refs are called with kwargs: `Calc.add(a=2, b=3)`. `name=` maps to a differently named attribute on the target. The Service class is never instantiated; the target is.
@@ -51,32 +52,32 @@ Method Refs are called with kwargs: `Calc.add(a=2, b=3)`. `name=` maps to a diff
 From outside the tree:
 
 ```python
-ctx = nu.Context().bind(dict, {})  # nu.mem, every Shape
-ctx = nu.Context().bind(dict, state, Library)  # nu.mem, scoped to one Shape
+ctx = nu.Context().bind(dict, {})  # nustd.mem, every Shape
+ctx = nu.Context().bind(dict, state, Library)  # nustd.mem, scoped to one Shape
 ```
 
 `Context.bind` returns a new Context. Inside the tree:
 
 ```python
 nu.Provide(dict, {}, Library.name.set("x"))  # one fabric, one body
-nu.With(nu.kv.memory_navigator(), body=Library.name.set("x"))  # several brackets, flat
+nu.With(nustd.kv.memory_navigator(), body=Library.name.set("x"))  # several brackets, flat
 ```
 
 Brackets come from fabric helpers, each returning a `Provide` or a `With`:
 
 ```python
-nu.service.bind(Calc, target=object())
-nu.http.bind(Calc, base_url="https://api.example.com")
-nu.llm.ollama(Calc, model="qwen3")
-nu.kv.memory_navigator()
-nu.kv.rocksdb_navigator(".db")
+nustd.service.bind(Calc, target=object())
+nustd.http.bind(Calc, base_url="https://api.example.com")
+nustd.llm.ollama(Calc, model="qwen3")
+nustd.kv.memory_navigator()
+nustd.kv.rocksdb_navigator(".db")
 ```
 
-`nu.mem` ships no bind helper; use `Context.bind(dict, ...)` or `nu.Provide(dict, {}, body)`. `nu.kv` writes need `nu.kv.auto_flow_atomic(body)` around the flow.
+`nustd.mem` ships no bind helper; use `Context.bind(dict, ...)` or `nu.Provide(dict, {}, body)`. `nustd.kv` writes need `nustd.kv.auto_flow_atomic(body)` around the flow.
 
 Nothing in the tree reaches a fabric that was not provided around it. `nu.run(Library.name.set("x"))` with no Context raises `LookupError: No binding for: dict[Library]`.
 
-`nu.mem` addresses by slot name only, so two Shapes with the same slot name collide under one unscoped `bind(dict, {})`. Tag with the Shape to keep them apart.
+`nustd.mem` addresses by slot name only, so two Shapes with the same slot name collide under one unscoped `bind(dict, {})`. Tag with the Shape to keep them apart.
 
 ## Running
 
@@ -85,7 +86,7 @@ value, ctx = nu.run(term)  # sync
 # asyncio.run(nu.arun(term))         # async
 ```
 
-`nu.run` raises `ValueError` on Nu law validation, and `RuntimeError: eval: program contains an async-only atom` when the tree needs `arun`. Use `arun` for `nu.ui.server`, long polls, `ParallelAsync`, `Watch`. Everything else runs under `nu.run`.
+`nu.run` raises `ValueError` on Nu law validation, and `RuntimeError: eval: program contains an async-only atom` when the tree needs `arun`. Use `arun` for `nustd.ui.server`, long polls, `ParallelAsync`, `Watch`. Everything else runs under `nu.run`.
 
 **The host runs the tree.** You build and return a term. Do not write `nu.run`, `asyncio.run`, or `if __name__ == "__main__":` unless asked for a standalone script.
 

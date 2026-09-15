@@ -45,8 +45,8 @@ classifiers = [
 ]
 requires-python = ">=3.10"
 dependencies = [
-    "nucore>=0.2.1",
-    "nustd[llm,cc,mem,kv]>=0.2.1",
+    "nucore>=0.5.0",
+    "nustd[llm,cc,mem,kv]>=0.5.0",
 ]
 
 [project.urls]

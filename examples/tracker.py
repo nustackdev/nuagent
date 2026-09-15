@@ -17,7 +17,7 @@ aggregate over the same collection. A tool-calling agent needs one round trip
 per task plus one to count. Here it is one term, and the model has to compose
 ``ForEachDo`` over ``Board.tasks.keys()`` with an ``IfDo`` inside it. It also
 has to look ``keys`` up: the surface section lists ``tasks`` as a
-``ShapesDictRef`` and no verbs at all, and ``ShapesDictRef`` is a nu.mem Ref,
+``ShapesDictRef`` and no verbs at all, and ``ShapesDictRef`` is a nustd.mem Ref,
 which the nucore catalogue does not carry.
 
 The model ends the run itself: it writes ``Run.done.set(True)`` into the
@@ -27,7 +27,7 @@ verifying itself, not the agent's stopping rule.
 
 Two dict fabrics, and the split matters. The agent's own working memory is
 bound tagged to ``MemSession``, so nothing the model writes can reach it. The
-board is bound untagged on the Context, for two reasons: nu.mem addresses by
+board is bound untagged on the Context, for two reasons: nustd.mem addresses by
 slot name and the model's module declares its own ``Board`` class, where a
 tagged binding is keyed on the host's class object and would not resolve;
 and ``nu.Provide`` binds a copy of the dict it is given, so a board bound
@@ -56,6 +56,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING
 
 import nu
+import nustd
 from nu.lang import ScalarQuery
 from nu.lang.sentinels import EMPTY, INVALID, UNSET
 
@@ -86,11 +87,11 @@ class Task(nu.Shape):
           pass.
     """
 
-    title = nu.mem.StrRef.slot()
-    summary = nu.mem.StrRef.slot()
-    priority = nu.mem.IntRef.slot()
-    done = nu.mem.BoolRef.slot()
-    owner = nu.mem.StrRef.slot()
+    title = nustd.mem.StrRef.slot()
+    summary = nustd.mem.StrRef.slot()
+    priority = nustd.mem.IntRef.slot()
+    done = nustd.mem.BoolRef.slot()
+    owner = nustd.mem.StrRef.slot()
 
 
 class Board(nu.Shape):
@@ -102,9 +103,9 @@ class Board(nu.Shape):
         - Task ids are strings, and `tasks` is keyed by them.
     """
 
-    name = nu.mem.StrRef.slot()
-    open_count = nu.mem.IntRef.slot()
-    tasks = nu.mem.ShapesDictRef.slot(Task, str)
+    name = nustd.mem.StrRef.slot()
+    open_count = nustd.mem.IntRef.slot()
+    tasks = nustd.mem.ShapesDictRef.slot(Task, str)
 
 
 #: The world before the agent touches it. Three of the five tasks are above
@@ -175,7 +176,7 @@ the verbs of a ShapesDictRef yet, so look them up before you write.\
 class Bot(nu.Service):
     """Claude Code prompt surface for one agent run."""
 
-    ask = nu.cc.PromptRef.method()
+    ask = nustd.cc.PromptRef.method()
 
 
 class FormatMessages(ScalarQuery):
@@ -285,7 +286,7 @@ def agent() -> Nu:
     )
     return nu.With(
         nu.Provide(dict, {}, tag=nuagent.MemSession),
-        nu.cc.bind(Bot, model=MODEL, allowed_tools=[], permission_mode="default"),
+        nustd.cc.bind(Bot, model=MODEL, allowed_tools=[], permission_mode="default"),
         body=loop,
     )
 

@@ -77,7 +77,7 @@ already provided around your program.
   name, same slot names, same Ref types as listed here. Addressing is by slot
   name, so a matching declaration reaches the host's world. Write every slot
   with `.slot()`, never with the annotation form: a slot declared as
-  `total: nu.mem.IntRef` is dropped when the host loads your module, and the
+  `total: nustd.mem.IntRef` is dropped when the host loads your module, and the
   Shape comes back without it.
 - **The verbs are not here.** Each entry is one line: name, kind, type,
   config. To learn what a slot or a method can do, spend a turn returning
@@ -88,9 +88,13 @@ The declaration form to repeat, with the fabric off the heading and the type
 and config off the entry line:
 
 ```python
+import nu
+import nustd
+
+
 class Ledger(nu.Shape):
-    total = nu.mem.IntRef.slot()
-    rows = nu.mem.ShapesDictRef.slot(Row, str)
+    total = nustd.mem.IntRef.slot()
+    rows = nustd.mem.ShapesDictRef.slot(Row, str)
 ```\
 """
 
@@ -197,13 +201,17 @@ def _entry_line(entry: Entry) -> str:
 
 
 def _fabric(record: Record) -> str:
-    """The fabric the class's Refs live in, e.g. ``nu.mem``, or "" when mixed.
+    """The fabric the class's Refs live in, e.g. ``nustd.mem``, or "" when mixed.
 
     A slot's Ref class is where the fabric is actually written down, and the
     entry line does not carry it: ``StrRef`` alone does not say whether the
     write is ephemeral or durable, and the model has to name the fabric to
-    repeat the declaration. Anything but a single unanimous ``nu.<fabric>``
+    repeat the declaration. Anything but a single unanimous ``nustd.<fabric>``
     is left off rather than guessed at.
+
+    Every fabric lives under ``nustd`` as of nu 0.5.0. Nothing under ``nu``
+    itself is one, so a Ref whose module does not start there yields nothing
+    rather than a guess, and the heading simply loses its fabric.
     """
     target = record.target
     if not isinstance(target, type):
@@ -213,6 +221,6 @@ def _fabric(record: Record) -> str:
         found = parse_entry(target, entry.name)
         module = getattr(getattr(found, "target", None), "__module__", "")
         parts = module.split(".")
-        if len(parts) >= 2 and parts[0] == "nu":
+        if len(parts) >= 2 and parts[0] == "nustd":
             fabrics.add(f"{parts[0]}.{parts[1]}")
     return fabrics.pop() if len(fabrics) == 1 else ""

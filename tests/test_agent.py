@@ -12,12 +12,13 @@ from __future__ import annotations
 import textwrap
 
 import nu
+import nustd
 
 import nuagent
 
 
 class World(nu.Shape):
-    notes = nu.mem.ListRef.slot(str)
+    notes = nustd.mem.ListRef.slot(str)
 
 
 def src(text: str) -> str:
@@ -26,10 +27,11 @@ def src(text: str) -> str:
 
 APPENDS = src("""
     import nu
+    import nustd
 
 
     class World(nu.Shape):
-        notes = nu.mem.ListRef.slot(str)
+        notes = nustd.mem.ListRef.slot(str)
 
 
     def out():
@@ -39,14 +41,15 @@ APPENDS = src("""
 #: What a finishing reply looks like: the work and the flag, one program.
 FINISHES = src("""
     import nu
+    import nustd
 
 
     class World(nu.Shape):
-        notes = nu.mem.ListRef.slot(str)
+        notes = nustd.mem.ListRef.slot(str)
 
 
     class Run(nu.Shape):
-        done = nu.mem.BoolRef.slot()
+        done = nustd.mem.BoolRef.slot()
 
 
     def out():
@@ -134,8 +137,8 @@ def test_the_two_sessions_differ_only_in_the_fabric():
         mem_ref = getattr(nuagent.MemSession, slot)
         kv_ref = getattr(kv, slot)
         assert type(mem_ref).__name__ == type(kv_ref).__name__
-        assert type(mem_ref).__module__.startswith("nu.mem")
-        assert type(kv_ref).__module__.startswith("nu.kv")
+        assert type(mem_ref).__module__.startswith("nustd.mem")
+        assert type(kv_ref).__module__.startswith("nustd.kv")
 
 
 # --- the run shape: the model's one lever ----------------------------------
@@ -155,8 +158,8 @@ def test_the_run_shape_carries_exactly_one_slot():
 
 def test_the_two_run_shapes_differ_only_in_the_fabric():
     assert type(nuagent.Run.done).__name__ == type(nuagent.KVRun.done).__name__
-    assert type(nuagent.Run.done).__module__.startswith("nu.mem")
-    assert type(nuagent.KVRun.done).__module__.startswith("nu.kv")
+    assert type(nuagent.Run.done).__module__.startswith("nustd.mem")
+    assert type(nuagent.KVRun.done).__module__.startswith("nustd.kv")
 
 
 # --- prose is not source ----------------------------------------------------
@@ -228,10 +231,11 @@ def test_the_state_is_not_truncated_either():
     # a failed one, so it appends again and the observation grows.
     long = src("""
         import nu
+        import nustd
 
 
         class World(nu.Shape):
-            notes = nu.mem.ListRef.slot(str)
+            notes = nustd.mem.ListRef.slot(str)
 
 
         def out():
@@ -307,7 +311,7 @@ def test_the_loop_spends_its_budget_and_gives_up():
 def test_max_turns_takes_a_ref():
     # A running agent's budget can be raised from outside.
     class Budget(nu.Shape):
-        limit = nu.mem.IntRef.slot()
+        limit = nustd.mem.IntRef.slot()
 
     agent = nuagent.agent(
         session=nuagent.MemSession,

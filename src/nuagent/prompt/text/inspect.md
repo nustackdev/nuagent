@@ -1,6 +1,6 @@
 # Looking things up
 
-The catalogue above covers the nucore atoms only. The fabric surfaces (`nu.mem`, `nu.kv` and the rest) are not listed there. Read them with `nu.inspect.Inspect`, a Nu atom that yields text. It is reachable after a bare `import nu`.
+The catalogue above covers the nucore atoms only. The fabric surfaces (`nustd.mem`, `nustd.kv` and the rest) are not listed there. Read them with `nu.inspect.Inspect`, a Nu atom that yields text. It is reachable after a bare `import nu`.
 
 Spend a whole turn on a lookup. Return it, do not print it:
 
@@ -9,12 +9,12 @@ import nu
 
 
 def out():
-    return nu.inspect.Inspect("nu.mem")
+    return nu.inspect.Inspect("nustd.mem")
 ```
 
-`Inspect` takes one dotted path. Either a module (`nu.mem`, `nu.core.arithmetic`) or a fully qualified subject (`nu.core.flows.WhileDo`, `nu.forms.primitives.Int`).
+`Inspect` takes one dotted path. Either a module (`nustd.mem`, `nu.core.arithmetic`) or a fully qualified subject (`nu.core.flows.WhileDo`, `nu.forms.primitives.Int`).
 
-A module renders its docstring and then every Form, Ref and Interaction it exports, one summary line each. That is how you learn a fabric you have not been shown. Nothing is truncated: `nu.inspect.Inspect("nu.mem")` comes back at over 5000 characters, whole. A subject renders its args, notes, what it yields, and worked examples.
+A module renders its docstring and then every Form, Ref and Interaction it exports, one summary line each. That is how you learn a fabric you have not been shown. Nothing is truncated: `nu.inspect.Inspect("nustd.mem")` comes back at over 5000 characters, whole. A subject renders its args, notes, what it yields, and worked examples.
 
 The path must resolve. A path that names nothing ends the run, so inspect the module first and take exact names off it rather than guessing at a subject path.
 

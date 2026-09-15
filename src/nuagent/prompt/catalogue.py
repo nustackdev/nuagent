@@ -6,7 +6,7 @@ cliff. This reads the same records the docs site reads, so a rename in the
 core is a rename in the next prompt.
 
 Scope is nucore, the Nu language itself. The nustd fabric surfaces
-(``nu.mem``, ``nu.kv``, ``nu.ui``, ...) are deliberately absent: which of
+(``nustd.mem``, ``nustd.kv``, ``nustd.ui``, ...) are deliberately absent: which of
 them an agent can reach is decided by the caller's bindings, not by us, and
 front-loading all of them would spend thousands of tokens on Refs the model
 cannot resolve. ``Inspect`` is how it finds them, and ``inspect.md`` teaches

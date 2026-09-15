@@ -19,8 +19,8 @@ The modules
   as package data, vocabulary generated from ``nu.inspect`` catalogues, and
   the caller's own Shapes and Services rendered as the app surface. Drop or
   replace a section per agent.
-- :mod:`~nuagent.agent` -- the session Shape (the same slots on ``nu.mem`` or
-  ``nu.kv``, which is all that separates an ephemeral run from a durable one),
+- :mod:`~nuagent.agent` -- the session Shape (the same slots on ``nustd.mem`` or
+  ``nustd.kv``, which is all that separates an ephemeral run from a durable one),
   the fenced block out of a reply, one attempt at the program, ``turn`` usable
   alone as a single-shot agent, and ``agent``: a turn under a WhileDo that
   ends when the model sets ``Run.done`` in the program it writes.

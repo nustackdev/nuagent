@@ -16,31 +16,32 @@ by the model and read by the loop.
 from __future__ import annotations
 
 import nu
+import nustd
 
 
 __all__ = ["KVRun", "KVSession", "MemSession", "Run"]
 
 
 class MemSession(nu.Shape):
-    """One agent run's slots, on nu.mem."""
+    """One agent run's slots, on nustd.mem."""
 
-    messages = nu.mem.ListRef.slot(dict)
-    reply = nu.mem.StrRef.slot()
-    draft = nu.mem.ProgramRef.slot()
-    outcome = nu.mem.StrRef.slot()
-    observation = nu.mem.StrRef.slot()
-    turns = nu.mem.IntRef.slot()
+    messages = nustd.mem.ListRef.slot(dict)
+    reply = nustd.mem.StrRef.slot()
+    draft = nustd.mem.ProgramRef.slot()
+    outcome = nustd.mem.StrRef.slot()
+    observation = nustd.mem.StrRef.slot()
+    turns = nustd.mem.IntRef.slot()
 
 
 class KVSession(nu.Shape):
-    """The same slots on nu.kv: durable, and readable after the run ends."""
+    """The same slots on nustd.kv: durable, and readable after the run ends."""
 
-    messages = nu.kv.ListRef.slot(dict)
-    reply = nu.kv.StrRef.slot()
-    draft = nu.kv.ProgramRef.slot()
-    outcome = nu.kv.StrRef.slot()
-    observation = nu.kv.StrRef.slot()
-    turns = nu.kv.IntRef.slot()
+    messages = nustd.kv.ListRef.slot(dict)
+    reply = nustd.kv.StrRef.slot()
+    draft = nustd.kv.ProgramRef.slot()
+    outcome = nustd.kv.StrRef.slot()
+    observation = nustd.kv.StrRef.slot()
+    turns = nustd.kv.IntRef.slot()
 
 
 class Run(nu.Shape):
@@ -54,15 +55,15 @@ class Run(nu.Shape):
         - It rides on the app's own fabric, so it needs no binding of its own.
     """
 
-    done = nu.mem.BoolRef.slot()
+    done = nustd.mem.BoolRef.slot()
 
 
 class KVRun(nu.Shape):
-    """The same one slot on nu.kv, for an app whose world is durable.
+    """The same one slot on nustd.kv, for an app whose world is durable.
 
     Notes:
         - Declare it as `Run`: addressing is by slot name, and the class name
           is not part of the address.
     """
 
-    done = nu.kv.BoolRef.slot()
+    done = nustd.kv.BoolRef.slot()

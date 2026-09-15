@@ -24,7 +24,7 @@ def out():
 A loop, three writes, a derived count and the run ending itself. One reply.
 
 - Nothing to register, no schema to keep in sync. Capability is the set of Refs bound around the loop, so bind a different set and it is a different agent with the same code.
-- Reach is whatever Nu reaches: a dict, a `nu.kv` store on disk, an http service, anything a fabric backs. The shipped catalogue is nucore only, so finding a fabric's verbs costs the model a turn.
+- Reach is whatever Nu reaches: a dict, a `nustd.kv` store on disk, an http service, anything a fabric backs. The shipped catalogue is nucore only, so finding a fabric's verbs costs the model a turn.
 - The loop is a term as well: a `WhileDo` over the turn, no python driver. Swap `MemSession` for `KVSession` and the same run is durable.
 
 ## Installation
@@ -41,16 +41,19 @@ An agent over a notes list. The app's Shape goes into the prompt, so the model
 opens the run already knowing the slot names and their types.
 
 ```python
-import nu, nuagent
+import nu
+import nustd
+
+import nuagent
 
 
 class Notes(nu.Shape):
-    items = nu.mem.ListRef.slot(str)
-    count = nu.mem.IntRef.slot()
+    items = nustd.mem.ListRef.slot(str)
+    count = nustd.mem.IntRef.slot()
 
 
 class Bot(nu.Service):
-    chat = nu.llm.ChatRef.method(temperature=0)
+    chat = nustd.llm.ChatRef.method(temperature=0)
 
 
 TASK = """\
@@ -77,7 +80,7 @@ loop = nuagent.agent(
 nu.run(
     nu.With(
         nu.Provide(dict, {}),
-        nu.llm.ollama(Bot, host="localhost", model="qwen2.5:7b-instruct"),
+        nustd.llm.ollama(Bot, host="localhost", model="qwen2.5:7b-instruct"),
         body=loop,
     )
 )

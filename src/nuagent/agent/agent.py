@@ -161,8 +161,8 @@ def agent(
             it.
         chat: the bound chat method.
         run: the Shape carrying the one slot the model writes to finish,
-            :class:`~.shapes.Run` on nu.mem or :class:`~.shapes.KVRun` on
-            nu.kv. It needs no binding of its own: it addresses by slot name
+            :class:`~.shapes.Run` on nustd.mem or :class:`~.shapes.KVRun` on
+            nustd.kv. It needs no binding of its own: it addresses by slot name
             into whatever store the app already bound untagged, which is the
             same store the model's own redeclaration reaches.
         max_turns: the budget. A Ref works as well as an int, so a running

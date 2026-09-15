@@ -12,11 +12,12 @@ The block is a Python module:
 
 ```python
 import nu
+import nustd
 
 
 class World(nu.Shape):
-    notes = nu.mem.ListRef.slot(str)
-    count = nu.mem.IntRef.slot()
+    notes = nustd.mem.ListRef.slot(str)
+    count = nustd.mem.IntRef.slot()
 
 
 def out():
@@ -25,7 +26,7 @@ def out():
 
 Rules for the module:
 
-- `import nu` at the top.
+- `import nu` at the top, and `import nustd` too whenever you name a fabric Ref. `nu` is the language; `nustd` is where every fabric lives. `nustd.mem.StrRef` with only `import nu` is a `NameError` and costs you the turn.
 - Declare Shapes at module level.
 - Define `def out()`. It takes **no arguments**. The host calls it with none.
 - `out()` returns one Nu term. That term is the program.

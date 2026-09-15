@@ -4,12 +4,13 @@
 
 ```python
 import nu
+import nustd
 
 
 class Cart(nu.Shape):
-    items = nu.mem.ListRef.slot(str)
-    total: nu.mem.IntRef
-    label: nu.mem.StrRef
+    items = nustd.mem.ListRef.slot(str)
+    total: nustd.mem.IntRef
+    label: nustd.mem.StrRef
 
 
 PRICES = {"apple": 3, "pear": 5, "fig": 11}
@@ -44,6 +45,7 @@ Load-bearing lines:
 
 ```python
 import nu
+import nustd
 
 
 class Meter:
@@ -62,18 +64,18 @@ class Meter:
 
 
 class Calc(nu.Service):
-    add = nu.service.QueryRef.method()
-    bump = nu.service.ActionRef.method()
-    wipe = nu.service.CommandRef.method(name="reset")
+    add = nustd.service.QueryRef.method()
+    bump = nustd.service.ActionRef.method()
+    wipe = nustd.service.CommandRef.method(name="reset")
 
 
 class Run(nu.Shape):
-    sum: nu.mem.FloatRef
-    running: nu.mem.FloatRef
+    sum: nustd.mem.FloatRef
+    running: nustd.mem.FloatRef
 
 
 app = nu.With(
-    nu.service.bind(Calc, target=Meter()),
+    nustd.service.bind(Calc, target=Meter()),
     body=nu.Sequential(
         Run.sum.set(Calc.add(a=2, b=3)),
         Run.running.set(Calc.bump(by=10)),
@@ -88,6 +90,6 @@ Final state: `{'sum': 5, 'running': 15.0}`.
 Load-bearing lines:
 
 - Kind per method: `add` is pure, so `QueryRef`. `bump` mutates and returns, so `ActionRef`. `reset` mutates and returns nothing, so `CommandRef`. Picking `QueryRef` for a mutator is the common error.
-- `nu.service.bind(Calc, target=Meter())` is a bracket; `nu.With(bracket, body=...)` binds it for the body only. Move a call outside the `With` and it raises `LookupError`.
+- `nustd.service.bind(Calc, target=Meter())` is a bracket; `nu.With(bracket, body=...)` binds it for the body only. Move a call outside the `With` and it raises `LookupError`.
 - `Calc.bump(by=Run.sum)` passes a Ref as an argument, read when the method Ref resolves.
 - `nu.Sequential(a, b, c)` is the explicit form of `a >> b >> c`. `Calc.wipe()` yields nothing and is legal only because `Sequential` is a Flow; the same call in a Query slot fails validation with `scalar_query cannot hold scalar_command`.
