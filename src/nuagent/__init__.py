@@ -49,7 +49,7 @@ from .agent import (
 from .prompt import DEFAULT_MODULES, DEFAULT_SECTIONS, inserted, surface_section, system_prompt
 
 
-__version__ = "0.1.1"
+__version__ = "0.1.3"
 
 __all__ = [
     "DEFAULT_MODULES",
